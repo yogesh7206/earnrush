@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NexGen Premium White</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+    --primary: #10b981;
+    --bg: #f9fafb;
+    --card: #ffffff;
+    --text: #111827;
+    --sub: #6b7280;
+    --border: #f3f4f6;
+}
+
+body.dark {
+    --primary: #10b981;
+    --bg: #0f172a;
+    --card: #1e293b;
+    --text: #f8fafc;
+    --sub: #94a3b8;
+    --border: #334155;
+}
+
+* {
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background: var(--bg);
+    margin: 0;
+    color: var(--text);
+    overflow-x: hidden;
+}
+        /* Auth Screen */
+        #auth-screen { background: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; position: fixed; width: 100%; z-index: 9999; }
+        .input-box { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--border); background: #f9fafb; margin-bottom: 10px; outline: none; font-size: 15px; }
+        .main-btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; }
+
+        /* Dashboard */
+        #app-dashboard { display: none; max-width: 500px; margin: 0 auto; padding: 15px; padding-bottom: 100px; }
+        .section { display: none; }
+        .section.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Profile Header */
+        .profile-header { background: var(--card); padding: 20px; border-radius: 24px; display: flex; align-items: center; gap: 15px;margin-top: 40px; margin-bottom: 10px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .avatar { width: 65px; height: 65px; border-radius: 20px; background: #ecfdf5; }
+        .u-info h3 { margin: 0; font-size: 13px; color: var(--sub); font-weight: 500; }
+        .u-info .mob-val { font-size: 18px; font-weight: 800; color: #333; display: flex; align-items: center; gap: 8px; }
+        .copy-box { background: #f3f4f6; padding: 6px 12px; border-radius: 10px; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; font-weight: 700; cursor: pointer; border: 1px solid #e5e7eb; }
+
+        /* Balance & Team Cards */
+        .large-card { padding: 20px; border-radius: 24px; margin-bottom: 12px; display: flex; align-items: center; gap: 15px; }
+        .bal-card { background: linear-gradient(135deg, #059669, #10b981); color: white; }
+        .team-card { background: white; border: 1px solid var(--border); }
+        .card-icon { width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+        .team-card .card-icon { background: #ecfdf5; color: var(--primary); }
+
+        /* Grids */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .grid-btn { background: white; padding: 20px; border-radius: 22px; border: 1px solid var(--border); text-align: center; font-weight: 700; font-size: 14px; cursor: pointer; }
+        .grid-btn i { display: block; margin: 0 auto 8px; color: var(--primary); width: 24px; height: 24px; }
+
+        /* List Group Style */
+        .list-group { background: white; border-radius: 22px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .list-item { padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); cursor: pointer; font-size: 15px; font-weight: 600; }
+        .list-item:last-child { border-bottom: none; }
+        .list-item span { display: flex; align-items: center; gap: 12px; }
+        .list-item i { color: var(--primary); width: 20px; height: 20px; }
+        .list-item .right-arrow { color: #d1d5db; width: 18px; }
+
+        /* Pages & History */
+        .page-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 99999; display: none; padding: 20px; overflow-y: auto; }
+        .page-header { display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 30px; height: 40px; }
+        .back-btn { position: absolute; left: 0; font-size: 24px; cursor: pointer; padding: 5px; }
+        .history-btn { position: absolute; right: 0; font-size: 14px; font-weight: 700; color: var(--primary); cursor: pointer; }
+        
+        .hist-card { background: white; padding: 15px; border-radius: 18px; border: 1px solid var(--border); margin-bottom: 12px; }
+        .hist-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px; }
+        .status-badge { padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; background: #fff7ed; color: #c2410c; }
+
+        /* Withdrawal Chips */
+        .wd-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 15px 0; }
+        .wd-chip { background: white; border: 1px solid var(--border); padding: 12px; border-radius: 12px; text-align: center; font-weight: 800; cursor: pointer; }
+        .wd-chip.active { border-color: var(--primary); color: var(--primary); background: #ecfdf5; }
+
+        /* Tabs */
+        .tab-bar { position: fixed; bottom: 0; width: 100%; max-width: 500px; left: 50%; transform: translateX(-50%); background: white; display: none; padding: 10px 0 25px; border-top: 1px solid var(--border); z-index: 9000; }
+        .tab { flex: 1; text-align: center; color: #9ca3af; font-size: 11px; font-weight: 700; cursor: pointer; }
+        .tab.active { color: var(--primary); }
+   body.dark #auth-screen,
+body.dark .page-overlay{
+    background: var(--bg);
+}
+
+body.dark .profile-header,
+body.dark .list-group,
+body.dark .grid-btn,
+body.dark .team-card,
+body.dark .hist-card,
+body.dark .tab-bar{
+    background: var(--card);
+    color: var(--text);
+}
+
+body.dark .input-box{
+    background: var(--card);
+    color: var(--text);
+    border-color: var(--border);
+}
+
+body.dark .copy-box{
+    background:#334155;
+    color:#fff;
+    border-color:#475569;
+}
+
+body.dark .u-info .mob-val{
+    color:#fff;
+}
+
+body.dark .wd-chip{
+    background:var(--card);
+    color:var(--text);
+}
+.theme-toggle{
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 999999;
+    width: 58px;
+    height: 30px;
+    border-radius: 30px;
+    background: #e5e7eb;
+    cursor: pointer;
+    transition: .3s;
+    display: flex;
+    align-items: center;
+    padding: 3px;
+}
+
+.theme-toggle.active{
+    background: #10b981;
+}
+
+.theme-toggle .circle{
+    width: 24px;
+    height: 24px;
+    background: white;
+    border-radius: 50%;
+    transition: .3s;
+}
+
+.theme-toggle.active .circle{
+    transform: translateX(28px);
+}
+.app-title{
+    position: fixed;
+    top: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--primary);
+    z-index: 999999;
+}
+  </style>
+</head>
+<body>
+<div class="app-title">EarnRush</div>
+<div id="themeToggle" class="theme-toggle" onclick="toggleTheme()">
+    <div class="circle"></div>
+</div>
+
+<div id="auth-screen">
+    <div style="width:100%; max-width:360px;">
+        <h2 style="text-align:center" id="auth-title">Welcome</h2>
+        <input 
+    type="tel" 
+    id="auth-mobile" 
+    class="input-box" 
+    placeholder="10 Digit Mobile Number" 
+    maxlength="10"
+    inputmode="numeric"
+    pattern="[0-9]{10}"
+>
+        <input type="password" id="auth-pass" class="input-box" placeholder="Password">
+        <div id="register-fields" style="display: none;">
+            <input type="password" id="auth-confirm" class="input-box" placeholder="Confirm Password">
+            <input type="text" id="auth-invite-req" class="input-box" placeholder="6-Char Invite Code" maxlength="6">
+        </div>
+        <button class="main-btn" onclick="handleAuth()" id="auth-btn">Login</button>
+        <p style="text-align:center; color:var(--primary); font-weight:800; cursor:pointer; margin-top:20px" onclick="toggleAuth()" id="auth-toggle">Register New Account</p>
+    </div>
+</div>
+
+<div id="app-dashboard">
+    <div id="home-sec" class="section">
+        <h2 style="padding:10px 0">Home</h2>
+        <div class="large-card bal-card">
+            <div class="card-icon"><i data-lucide="megaphone"></i></div>
+            <div><b>Announcement</b><br><small>Welcome to NexGen Premium!</small></div>
+        </div>
+        <div class="list-group">
+            <div class="list-item"><span><i data-lucide="trending-up"></i> Invest & Earn</span><i data-lucide="chevron-right" class="right-arrow"></i></div>
+        </div>
+    </div>
+
+    <div id="task-sec" class="section">
+    <h2 style="padding:10px 0">Task Center</h2>
+
+    <div class="list-group">
+
+        <!-- Daily Check-in Task -->
+        <div class="list-item" style="cursor:default;">
+    <span>
+        <i data-lucide="check-circle"></i>
+        Daily Check-in
+    </span>
+
+    <span style="display:flex; flex-direction:column; align-items:flex-end; gap:5px;">
+        <button
+            id="daily-claim-btn"
+            onclick="completeDailyCheckIn()"
+            style="
+                border:none;
+                background:var(--primary);
+                color:white;
+                padding:8px 16px;
+                border-radius:10px;
+                font-weight:800;
+                cursor:pointer;
+            "
+        >
+            CLAIM ₹1
+        </button>
+
+        <small
+            id="daily-task-countdown"
+            style="color:var(--sub); font-size:10px;"
+        ></small>
+    </span>
+</div>
+<!-- Watch Ads Task -->
+<div class="list-item" style="cursor:default;">
+    <span>
+        <i data-lucide="play-circle"></i>
+        Watch Ads
+    </span>
+
+    <button
+        id="watch-ads-btn"
+        onclick="watchAds()"
+        style="
+            border:none;
+            background:var(--primary);
+            color:white;
+            padding:8px 16px;
+            border-radius:10px;
+            font-weight:800;
+            cursor:pointer;
+        "
+    >
+        GET
+    </button>
+</div>
+
+    </div>
+</div>
+    <div id="mine-sec" class="section active">
+        <div class="profile-header">
+            <img id="u-avatar" class="avatar">
+            <div class="u-info">
+                <h3>Mobile:</h3>
+                <div class="mob-val"><span id="u-mob-display">********</span> <i data-lucide="eye" onclick="toggleEye()" id="eye-btn" style="width:16px; cursor:pointer; color:var(--primary)"></i></div>
+                <div class="copy-box" onclick="copyInv()">
+                    <span>Invite: <b id="u-invite-display">---</b></span> <i data-lucide="copy" style="width:14px"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="large-card bal-card" onclick="openPage('balance-page')" style="cursor:pointer;">
+    <div class="card-icon">
+        <i data-lucide="wallet"></i>
+    </div>
+
+    <div>
+        <small>Current Balance</small>
+        <div style="font-size:26px; font-weight:800" id="u-bal">₹ 0.00</div>
+    </div>
+
+    <i data-lucide="chevron-right" style="margin-left:auto;"></i>
+</div>
+    <div class="large-card team-card" onclick="openPage('team-page')" style="cursor:pointer;">
+    <div class="card-icon">
+        <i data-lucide="users"></i>
+    </div>
+    <div>
+        <small style="color:var(--sub)">My Team</small>
+        <div style="font-size:22px; font-weight:800" id="u-team">0 Members</div>
+    </div>
+    <i data-lucide="chevron-right" style="margin-left:auto; color:#d1d5db;"></i>
+</div>
+
+        <div class="grid-2">
+            <div class="grid-btn" onclick="openPage('bank-page')"><i data-lucide="landmark"></i> Bank Card</div>
+            <div class="grid-btn" onclick="openPage('withdraw-page')"><i data-lucide="banknote"></i> Withdraw</div>
+        </div>
+
+        <div class="list-group">
+            <div class="list-item" onclick="openPage('reward-page')">
+    <span><i data-lucide="gift"></i> Newbie Reward</span>
+    <i data-lucide="chevron-right" class="right-arrow"></i>
+</div>
+            <div class="list-item" onclick="openPage('notification-page')"><span><i data-lucide="bell"></i> Notification</span><i data-lucide="chevron-right" class="right-arrow"></i></div>
+            <div class="list-item" onclick="openPage('supervisor-page')"><span><i data-lucide="user-check"></i> Supervisor</span><i data-lucide="chevron-right" class="right-arrow"></i></div>
+            <div class="list-item" onclick="openPage('service-page')"><span><i data-lucide="headphones"></i> Online Services</span><i data-lucide="chevron-right" class="right-arrow"></i></div>
+            <div class="list-item" onclick="openPage('security-page')"><span><i data-lucide="shield-check"></i> Account Security</span><i data-lucide="chevron-right" class="right-arrow"></i></div>
+            <div class="list-item" onclick="logoutUser()" style="color:#ef4444"><span><i data-lucide="log-out"></i> Logout Account</span><i data-lucide="chevron-right" class="right-arrow"></i></div>
+        </div>
+    </div>
+</div>
+
+<div id="bank-page" class="page-overlay">
+    <div class="page-header"><span class="back-btn" onclick="closePage()">&lt;</span><h3>Link Bank Card</h3></div>
+    <input type="text" id="b-holder" class="input-box" placeholder="Holder Name">
+    <input type="text" id="b-name" class="input-box" placeholder="Bank Name">
+    <input type="number" id="b-acc" class="input-box" placeholder="Account Number">
+    <input type="text" id="b-ifsc" class="input-box" placeholder="IFSC Code" maxlength="11">
+    <button class="main-btn" onclick="saveBank()">Save Bank Details</button>
+</div>
+
+<div id="withdraw-page" class="page-overlay">
+    <div class="page-header">
+        <span class="back-btn" onclick="closePage()">&lt;</span>
+        <h3>Withdrawal</h3>
+        <span class="history-btn" onclick="openWithdrawHistory()">History</span>
+    </div>
+    <div class="wd-grid">
+        <div class="wd-chip" onclick="setAmt(100, this)">100</div>
+        <div class="wd-chip" onclick="setAmt(200, this)">200</div>
+        <div class="wd-chip" onclick="setAmt(300, this)">300</div>
+        <div class="wd-chip" onclick="setAmt(500, this)">500</div>
+        <div class="wd-chip" onclick="setAmt(1000, this)">1000</div>
+        <div class="wd-chip" onclick="setAmt(2000, this)">2000</div>
+        <div class="wd-chip" onclick="setAmt(5000, this)">5000</div>
+    </div>
+    <input type="number" id="wd-amt" class="input-box" placeholder="Selected Amount" readonly>
+    <button class="main-btn" onclick="processWithdraw()">Confirm Withdrawal</button>
+</div>
+
+<div id="history-page" class="page-overlay">
+    <div class="page-header"><span class="back-btn" onclick="closePage()">&lt;</span><h3>Withdraw History</h3></div>
+    <div id="history-list"></div>
+</div>
+
+<div class="tab-bar" id="bottom-tabs">
+    <div class="tab" onclick="tab('home', this)"><i data-lucide="home"></i><br>HOME</div>
+    <div class="tab" onclick="tab('task', this)"><i data-lucide="zap"></i><br>TASK</div>
+    <div class="tab active" onclick="tab('mine', this)"><i data-lucide="user"></i><br>MINE</div>
+</div>
+<div id="notification-page" class="page-overlay">
+    <div class="page-header">
+        <span class="back-btn" onclick="closePage()">&lt;</span>
+        <h3>Notification</h3>
+    </div>
+    <p>Notification content here</p>
+</div>
+<div id="supervisor-page" class="page-overlay">
+    <div class="page-header">
+        <span class="back-btn" onclick="closePage()">&lt;</span>
+        <h3>Supervisor</h3>
+    </div>
+
+    <div class="list-group">
+        <div class="list-item">
+            <span>Supervisor Name</span>
+            <span>Admin</span>
+        </div>
+
+        <div class="list-item">
+            <span>Contact</span>
+            <span>9876543210</span>
+        </div>
+    </div>
+</div>
+<div id="service-page" class="page-overlay">
+    <div class="page-header">
+        <span class="back-btn" onclick="closePage()">&lt;</span>
+        <h3>Online Services</h3>
+    </div>
+
+    <div class="list-group">
+        <div class="list-item">
+            <span>WhatsApp Support</span>
+        </div>
+
+        <div class="list-item">
+            <span>Telegram Support</span>
+        </div>
+
+        <div class="list-item">
+            <span>Email Support</span>
+        </div>
+    </div>
+</div>
+<div id="security-page" class="page-overlay">
+    <div class="page-header">
+        <span class="back-btn" onclick="closePage()">&lt;</span>
+        <h3>Account Security</h3>
+    </div>
+
+    <div class="list-group">
+        <div class="list-item">
+            <span>Change Login Password</span>
+            <i data-lucide="chevron-right" class="right-arrow"></i>
+        </div>
+
+        <div class="list-item">
+            <span>Change Withdrawal Password</span>
+            <i data-lucide="chevron-right" class="right-arrow"></i>
+        </div>
+
+        <div class="list-item">
+            <span>Security Center</span>
+            <i data-lucide="chevron-right" class="right-arrow"></i>
+        </div>
+    </div>
+</div>
+
+<script>
+    const _URL = 'https://hhzspyfwhrdwyzmebljz.supabase.co';
+    const _KEY = 'sb_publishable_-7oNoTs6qf3YfYb9_22FDw_jG61vyjy';
+    const db = supabase.createClient(_URL, _KEY);
+
+    let isReg = false, isHide = true, curUser = null;
+
+    function toggleAuth() {
+        isReg = !isReg;
+        document.getElementById('auth-title').innerText = isReg ? "Register" : "Welcome";
+        document.getElementById('register-fields').style.display = isReg ? "block" : "none";
+        document.getElementById('auth-btn').innerText = isReg ? "Sign Up" : "Login";
+    }
+
+    function generateInvite() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let res = ''; for (let i = 0; i < 6; i++) res += chars.charAt(Math.floor(Math.random() * chars.length));
+        return res;
+    }
+
+    async function handleAuth() {
+        const mob = document.getElementById('auth-mobile').value;
+        const pass = document.getElementById('auth-pass').value;
+        const conf = document.getElementById('auth-confirm').value;
+        const invInp = document.getElementById('auth-invite-req').value;
+
+        if(!mob || !pass) return alert("Fill all details!");
+
+if(!/^\d{10}$/.test(mob)) {
+    return alert("Mobile number must be exactly 10 digits!");
+}
+        if(isReg) {
+            if(pass !== conf) return alert("Passwords mismatch!");
+            if(invInp.length !== 6) return alert("Invite code must be 6 characters!");
+            const { data: invCheck } = await db.from('profiles').select('invite_code').eq('invite_code', invInp).single();
+            if(!invCheck) return alert("Invalid Invite Code!");
+            const myNewInv = generateInvite();
+           const { data: bonusConfig } = await db
+    .from('config')
+    .select('*')
+    .eq('key', 'registration_bonus')
+    .single();
+
+let regBonus = 0;
+
+if (bonusConfig && bonusConfig.is_active) {
+    regBonus = Number(bonusConfig.value || 0);
+}
+
+const { error } = await db.from('profiles').insert([{
+    mobile: mob,
+    password: pass,
+    invite_code: myNewInv,
+    balance: regBonus
+}]);
+            if(error) return alert("Account already exists!");
+            alert("Registered!"); toggleAuth();
+        } else {
+            const { data, error } = await db.from('profiles').select('*').eq('mobile', mob).eq('password', pass).single();
+            if(error || !data) return alert("Wrong Credentials!");
+           curUser = data;
+localStorage.setItem('loggedUser', JSON.stringify(data));
+startApp();
+        }
+    }
+
+    function startApp() {
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('app-dashboard').style.display = 'block';
+        document.getElementById('bottom-tabs').style.display = 'flex';
+        updateUI();
+    }
+
+    function updateUI() {
+        document.getElementById('u-bal').innerText = "₹ " + curUser.balance.toFixed(2);
+        document.getElementById('u-invite-display').innerText = curUser.invite_code;
+        document.getElementById('u-avatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${curUser.mobile}`;
+        document.getElementById('u-mob-display').innerText = isHide ? curUser.mobile.replace(/.(?=.{4})/g, '*') : curUser.mobile;
+        lucide.createIcons();
+    }
+
+    async function saveBank() {
+        if(curUser.acc_holder_name) return alert("Contact customer to change details");
+        const h = document.getElementById('b-holder').value;
+        const n = document.getElementById('b-name').value;
+        const a = document.getElementById('b-acc').value;
+        const i = document.getElementById('b-ifsc').value;
+        if(!h || !n || !a || !i) return alert("Fill all details!");
+        const { error } = await db.from('profiles').update({ acc_holder_name: h, bank_name: n, account_no: a, ifsc_code: i }).eq('mobile', curUser.mobile);
+        if(!error) { 
+            alert("Linked!"); 
+            curUser.acc_holder_name = h; 
+            curUser.bank_name = n;
+            curUser.account_no = a;
+            curUser.ifsc_code = i;
+            closePage(); 
+        }
+    }
+
+    function setAmt(v, el) {
+        document.getElementById('wd-amt').value = v;
+        document.querySelectorAll('.wd-chip').forEach(c => c.classList.remove('active'));
+        el.classList.add('active');
+    }
+
+    async function processWithdraw() {
+        const amt = parseFloat(document.getElementById('wd-amt').value);
+        if(!curUser.acc_holder_name) return alert("Bind Bank Card first!");
+        if(!amt || amt > curUser.balance) return alert("Invalid Amount/Low Balance!");
+
+        const { error: balErr } = await db.from('profiles').update({ balance: curUser.balance - amt }).eq('mobile', curUser.mobile);
+        if(balErr) return alert("Failed!");
+
+        await db.from('withdrawals').insert([{
+            user_mobile: curUser.mobile,
+            amount: amt,
+            status: 'Pending'
+        }]);
+
+        curUser.balance -= amt;
+        updateUI();
+        alert("Submitted!");
+        closePage();
+    }
+
+    async function openWithdrawHistory() {
+        const list = document.getElementById('history-list');
+        list.innerHTML = "<p style='text-align:center'>Loading...</p>";
+        openPage('history-page');
+        
+        const { data, error } = await db.from('withdrawals').select('*').eq('user_mobile', curUser.mobile).order('created_at', { ascending: false });
+
+        if(error || !data.length) return list.innerHTML = "<p style='text-align:center; margin-top:40px'>No History Found</p>";
+
+        list.innerHTML = data.map(i => `
+            <div class="hist-card">
+                <div class="hist-row"><b>Order ID:</b> <span>#${i.id}</span></div>
+                <div class="hist-row"><b>Date:</b> <span>${new Date(i.created_at).toLocaleString()}</span></div>
+                <div class="hist-row"><b>Amount:</b> <span style="color:var(--primary); font-weight:800">₹ ${i.amount}</span></div>
+                <div class="hist-row"><b>Status:</b> <span class="status-badge">${i.status}</span></div>
+            </div>
+        `).join('');
+    }
+
+    function toggleEye() { isHide = !isHide; updateUI(); }
+    
+    function openPage(id) { 
+    document.getElementById(id).style.display = 'block'; 
+
+    // Bank Card Prefill
+    if(id === 'bank-page' && curUser) {
+        document.getElementById('b-holder').value = curUser.acc_holder_name || '';
+        document.getElementById('b-name').value = curUser.bank_name || '';
+        document.getElementById('b-acc').value = curUser.account_no || '';
+        document.getElementById('b-ifsc').value = curUser.ifsc_code || '';
+    }
+
+    // My Team Page
+    if(id === 'team-page') {
+        loadTeamDetails();
+    }
+}
+async function loadTeamDetails() {
+    if (!curUser) return;
+
+    const teamList = document.getElementById('team-list');
+
+    teamList.innerHTML = `
+        <p style="text-align:center; color:var(--sub);">
+            Loading team details...
+        </p>
+    `;
+
+    // Get team members from Supabase
+    const { data, error } = await db
+        .from('profiles')
+        .select('mobile, invite_code')
+        .eq('referred_by', curUser.invite_code);
+
+    if (error) {
+        console.error(error);
+
+        teamList.innerHTML = `
+            <p style="text-align:center; color:#ef4444;">
+                Failed to load team details.
+            </p>
+        `;
+        return;
+    }
+
+    const members = data || [];
+
+    // Update total team count
+    document.getElementById('team-total').innerText = members.length;
+
+    // Update direct members count
+    document.getElementById('team-direct').innerText = members.length;
+
+    // Update My Team card count
+    document.getElementById('u-team').innerText =
+        members.length + 
+        (members.length === 1 ? ' Member' : ' Members');
+
+    // If no members
+    if (members.length === 0) {
+        teamList.innerHTML = `
+            <div class="hist-card">
+                <p style="text-align:center; color:var(--sub); margin:0;">
+                    No team members yet.
+                </p>
+            </div>
+        `;
+        return;
+    }
+
+    // Show team members
+    teamList.innerHTML = members.map((member, index) => `
+        <div class="hist-card">
+
+            <div class="hist-row">
+                <b>Member ${index + 1}</b>
+                <span>Team Member</span>
+            </div>
+
+            <div class="hist-row">
+                <b>Mobile</b>
+                <span>${member.mobile}</span>
+            </div>
+
+        </div>
+    `).join('');
+}
+    function closePage() { document.querySelectorAll('.page-overlay').forEach(p => p.style.display = 'none'); }
+    
+    function tab(id, el) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById(id + '-sec').classList.add('active');
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+}
+  function copyInv() { 
+    navigator.clipboard.writeText(curUser.invite_code); 
+    alert("Copied!"); 
+}
+
+
+// ADD THIS HERE
+if(localStorage.getItem('theme') === 'dark'){
+    document.body.classList.add('dark');
+
+    window.addEventListener('load', () => {
+        document
+        .getElementById('themeToggle')
+        ?.classList.add('active');
+    });
+}
+
+
+function toggleTheme(){
+
+    document.body.classList.toggle('dark');
+
+    const isDark =
+        document.body.classList.contains('dark');
+
+    localStorage.setItem(
+        'theme',
+        isDark ? 'dark' : 'light'
+    );
+
+    const toggle =
+        document.getElementById('themeToggle');
+
+    if(toggle){
+        toggle.classList.toggle(
+            'active',
+            isDark
+        );
+    }
+}
+
+
+lucide.createIcons();
+function toggleTheme(){
+
+    document.body.classList.toggle('dark');
+
+    const isDark =
+        document.body.classList.contains('dark');
+
+    localStorage.setItem(
+        'theme',
+        isDark ? 'dark' : 'light'
+    );
+
+    const toggle =
+        document.getElementById('themeToggle');
+
+    if(toggle){
+        toggle.classList.toggle(
+            'active',
+            isDark
+        );
+    }
+
+    lucide.createIcons();
+}window.addEventListener('load', async () => {
+
+    const savedUser = localStorage.getItem('loggedUser');
+
+    if(savedUser){
+
+        const localUser = JSON.parse(savedUser);
+
+        const { data } = await db
+            .from('profiles')
+            .select('*')
+            .eq('mobile', localUser.mobile)
+            .single();
+
+        if(data){
+
+            curUser = data;
+
+            localStorage.setItem(
+                'loggedUser',
+                JSON.stringify(data)
+            );
+
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('app-dashboard').style.display = 'block';
+            document.getElementById('bottom-tabs').style.display = 'flex';
+
+            updateUI();
+        }
+    }
+});
+    lucide.createIcons();
+function logoutUser(){
+
+    localStorage.removeItem('loggedUser');
+
+    curUser = null;
+
+    document.getElementById('app-dashboard').style.display = 'none';
+    document.getElementById('bottom-tabs').style.display = 'none';
+    document.getElementById('auth-screen').style.display = 'flex';
+
+}
+let dailyCountdownInterval;
+
+function getTodayDate() {
+    const now = new Date();
+
+    return now.getFullYear() + '-' +
+        String(now.getMonth() + 1).padStart(2, '0') + '-' +
+        String(now.getDate()).padStart(2, '0');
+}
+
+function getNextDayMidnight() {
+    const now = new Date();
+
+    const nextDay = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() + 1,
+        0, 0, 0, 0
+    );
+
+    return nextDay;
+}
+
+function updateDailyCheckInUI() {
+
+    if (!curUser) return;
+
+    const today = getTodayDate();
+
+    const lastCheckIn = localStorage.getItem(
+        'dailyCheckIn_' + curUser.mobile
+    );
+
+    const claimBtn = document.getElementById('daily-claim-btn');
+    const countdown = document.getElementById('daily-task-countdown');
+
+    if (!claimBtn || !countdown) return;
+
+    // Clear old countdown
+    if (dailyCountdownInterval) {
+        clearInterval(dailyCountdownInterval);
+    }
+
+    // Already claimed today
+    if (lastCheckIn === today) {
+
+        claimBtn.innerText = "Already Claimed";
+        claimBtn.disabled = true;
+
+        claimBtn.style.background = "#9ca3af";
+        claimBtn.style.cursor = "not-allowed";
+
+        function updateCountdown() {
+
+            const now = new Date();
+            const nextMidnight = getNextDayMidnight();
+
+            const difference = nextMidnight - now;
+
+            if (difference <= 0) {
+                clearInterval(dailyCountdownInterval);
+
+                // New day — allow claiming again
+                updateDailyCheckInUI();
+                return;
+            }
+
+            const hours = Math.floor(
+                difference / (1000 * 60 * 60)
+            );
+
+            const minutes = Math.floor(
+                (difference % (1000 * 60 * 60)) /
+                (1000 * 60)
+            );
+
+            const seconds = Math.floor(
+                (difference % (1000 * 60)) /
+                1000
+            );
+
+            countdown.innerText =
+                "Next claim in " +
+                String(hours).padStart(2, '0') + ":" +
+                String(minutes).padStart(2, '0') + ":" +
+                String(seconds).padStart(2, '0');
+        }
+
+        updateCountdown();
+
+        dailyCountdownInterval =
+            setInterval(updateCountdown, 1000);
+
+    } else {
+
+        // Available to claim
+        claimBtn.innerText = "CLAIM ₹1";
+        claimBtn.disabled = false;
+
+        claimBtn.style.background = "var(--primary)";
+        claimBtn.style.cursor = "pointer";
+
+        countdown.innerText = "Available now";
+    }
+}
+
+
+async function completeDailyCheckIn() {
+
+    if (!curUser) {
+        alert("Please login first!");
+        return;
+    }
+
+    const today = getTodayDate();
+
+    // Prevent double claim
+    const lastCheckIn = localStorage.getItem(
+        'dailyCheckIn_' + curUser.mobile
+    );
+
+    if (lastCheckIn === today) {
+        alert("You have already claimed today's reward!");
+        updateDailyCheckInUI();
+        return;
+    }
+
+    // Reward is now ₹1
+    const reward = 1;
+
+    const newBalance =
+        Number(curUser.balance) + reward;
+
+    // Update Supabase balance
+    const { error } = await db
+        .from('profiles')
+        .update({
+            balance: newBalance
+        })
+        .eq('mobile', curUser.mobile);
+
+    if (error) {
+        console.error(error);
+        alert("Claim failed. Please try again!");
+        return;
+    }
+
+    // Update current user
+    curUser.balance = newBalance;
+
+    // Save updated user
+    localStorage.setItem(
+        'loggedUser',
+        JSON.stringify(curUser)
+    );
+
+    // Mark today's task as claimed
+    localStorage.setItem(
+        'dailyCheckIn_' + curUser.mobile,
+        today
+    );
+
+    // Update balance
+    updateUI();
+
+    // Update claim button and countdown
+    updateDailyCheckInUI();
+
+    alert("Daily Check-in claimed! ₹1 added to your balance.");
+}
+function watchAds() {
+    if (!curUser) {
+        alert("Please login first!");
+        return;
+    }
+
+    // Adsterra Smartlink
+    const smartLink = "https://recallscarce.com/fwws1penv?key=103b83ca582a89acbc6d4af5b39f4827";
+
+    // Open Smartlink in a new tab
+    window.open(smartLink, "_blank");
+}
+</script>
+<div id="reward-page" class="page-overlay">
+    <div class="page-header">
+        <span class="back-btn" onclick="closePage()">&lt;</span>
+        <h3>Newbie Reward</h3>
+    </div>
+    <p>Yahan apna content likho.</p>
+</div>
+<div id="team-page" class="page-overlay">
+    <div class="page-header">
+        <span class="back-btn" onclick="closePage()">&lt;</span>
+        <h3>My Team</h3>
+    </div>
+
+    <div class="list-group">
+        <div class="list-item">
+            <span>
+                <i data-lucide="users"></i>
+                Total Team Members
+            </span>
+            <b id="team-total">0</b>
+        </div>
+
+        <div class="list-item">
+            <span>
+                <i data-lucide="user-plus"></i>
+                Direct Members
+            </span>
+            <b id="team-direct">0</b>
+        </div>
+
+        <div class="list-item">
+            <span>
+                <i data-lucide="wallet"></i>
+                Team Earnings
+            </span>
+            <b id="team-earnings">₹ 0.00</b>
+        </div>
+    </div>
+    <h3 style="margin-top:25px;">Team Members</h3>
+
+    <div id="team-list">
+        <p style="text-align:center; color:var(--sub);">
+            Loading team details...
+        </p>
+    </div>
+</div>
+<div id="balance-page" class="page-overlay">
+
+    <div class="page-header">
+        <span class="back-btn" onclick="closePage()">&lt;</span>
+        <h3>Current Balance</h3>
+    </div>
+
+    <!-- Future Balance Content -->
+    
+</div>
+</body>
+</html>

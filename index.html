@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+\<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -174,7 +174,7 @@ body.dark .wd-chip{
   </style>
 </head>
 <body>
-<div class="app-title">EarnRush</div>
+<div class="app-title">Earn Rush</div>
 <div id="themeToggle" class="theme-toggle" onclick="toggleTheme()">
     <div class="circle"></div>
 </div>
@@ -189,7 +189,8 @@ body.dark .wd-chip{
     placeholder="10 Digit Mobile Number" 
     maxlength="10"
     inputmode="numeric"
-    pattern="[0-9]{10}"
+    autocomplete="tel"
+    oninput="this.value = this.value.replace(/[^0-9]/g, '')"
 >
         <input type="password" id="auth-pass" class="input-box" placeholder="Password">
         <div id="register-fields" style="display: none;">
@@ -249,6 +250,30 @@ body.dark .wd-chip{
     </span>
 </div>
 <!-- Watch Ads Task -->
+<div class="list-item" style="cursor:default;">
+    <span>
+        <i data-lucide="play-circle"></i>
+        Watch Ads
+    </span>
+
+    <button
+        id="watch-ads-btn"
+        onclick="watchAds()"
+        style="
+            border:none;
+            background:var(--primary);
+            color:white;
+            padding:8px 16px;
+            border-radius:10px;
+            font-weight:800;
+            cursor:pointer;
+        "
+    >
+        GET
+    </button>
+</div>
+
+<!-- Watch Ads Task 2 -->
 <div class="list-item" style="cursor:default;">
     <span>
         <i data-lucide="play-circle"></i>
@@ -333,7 +358,14 @@ body.dark .wd-chip{
     <input type="text" id="b-holder" class="input-box" placeholder="Holder Name">
     <input type="text" id="b-name" class="input-box" placeholder="Bank Name">
     <input type="number" id="b-acc" class="input-box" placeholder="Account Number">
-    <input type="text" id="b-ifsc" class="input-box" placeholder="IFSC Code" maxlength="11">
+    <input 
+    type="text" 
+    id="b-ifsc" 
+    class="input-box" 
+    placeholder="IFSC Code" 
+    maxlength="11"
+    oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '')"
+>
     <button class="main-btn" onclick="saveBank()">Save Bank Details</button>
 </div>
 
@@ -396,20 +428,21 @@ body.dark .wd-chip{
         <span class="back-btn" onclick="closePage()">&lt;</span>
         <h3>Online Services</h3>
     </div>
-
-    <div class="list-group">
-        <div class="list-item">
-            <span>WhatsApp Support</span>
-        </div>
-
-        <div class="list-item">
-            <span>Telegram Support</span>
-        </div>
-
-        <div class="list-item">
-            <span>Email Support</span>
-        </div>
+<div class="list-group">
+    <div class="list-item">
+        <span>WhatsApp Support</span>
     </div>
+
+    <div class="list-item">
+        <span>Telegram Support</span>
+    </div>
+
+    <div class="list-item"
+         onclick="window.open('https://chat.whatsapp.com/HnITkV33zib98D0Lh8icW5', '_blank')">
+        <span>WhatsApp Group</span>
+        <i data-lucide="chevron-right" class="right-arrow"></i>
+    </div>
+</div>
 </div>
 <div id="security-page" class="page-overlay">
     <div class="page-header">
@@ -584,7 +617,11 @@ startApp();
     function openPage(id) { 
     document.getElementById(id).style.display = 'block'; 
 
-    // Bank Card Prefill
+       // Points History
+    if(id === 'balance-page' && curUser) {
+        loadPointsHistory();
+    }
+ // Bank Card Prefill
     if(id === 'bank-page' && curUser) {
         document.getElementById('b-holder').value = curUser.acc_holder_name || '';
         document.getElementById('b-name').value = curUser.bank_name || '';
@@ -939,6 +976,21 @@ async function completeDailyCheckIn() {
         'loggedUser',
         JSON.stringify(curUser)
     );
+// Add Daily Check-in transaction to points history
+const { error: pointsError } = await db
+    .from('points_details')
+    .insert([{
+        user_id: curUser.id,
+        mobile_no: curUser.mobile,
+        invite_code: curUser.invite_code,
+        amount: 1,
+        reason: 'Daily Check-in',
+        post_balance: newBalance
+    }]);
+
+if (pointsError) {
+    console.error('Points History Error:', pointsError);
+}
 
     // Mark today's task as claimed
     localStorage.setItem(
@@ -966,6 +1018,147 @@ function watchAds() {
     // Open Smartlink in a new tab
     window.open(smartLink, "_blank");
 }
+async function loadPointsHistory() {
+
+    if (!curUser) return;
+
+    const historyList =
+        document.getElementById('points-history-list');
+
+    const currentBalance =
+        document.getElementById('points-current-balance');
+
+    // Show current balance
+    currentBalance.innerText =
+        Number(curUser.balance).toFixed(2);
+
+    // Loading
+    historyList.innerHTML = `
+        <p style="
+            text-align:center;
+            color:var(--sub);
+            margin-top:40px;
+        ">
+            Loading...
+        </p>
+    `;
+
+    // Get user's points history
+    const { data, error } = await db
+        .from('points_details')
+        .select('amount, reason, created_at')
+        .eq('mobile_no', curUser.mobile)
+        .order('created_at', { ascending: false });
+
+    // Error
+    if (error) {
+
+        console.error('Points History Error:', error);
+
+        historyList.innerHTML = `
+            <p style="
+                text-align:center;
+                color:#ef4444;
+                margin-top:40px;
+            ">
+                Failed to load history.
+            </p>
+        `;
+
+        return;
+    }
+
+    // No history
+    if (!data || data.length === 0) {
+
+        historyList.innerHTML = `
+            <div class="hist-card">
+                <p style="
+                    text-align:center;
+                    color:var(--sub);
+                    margin:0;
+                ">
+                    No Points History Found
+                </p>
+            </div>
+        `;
+
+        return;
+    }
+
+    // Show history
+    historyList.innerHTML = data.map(item => {
+
+        const amount = Number(item.amount);
+
+        const amountText =
+            amount >= 0
+                ? '+' + amount.toFixed(2)
+                : amount.toFixed(2);
+
+        const amountColor =
+            amount >= 0
+                ? 'var(--primary)'
+                : '#ef4444';
+
+        const dateTime =
+            new Date(item.created_at).toLocaleString();
+
+        return `
+            <div class="hist-card">
+
+                <div style="
+                    display:flex;
+                    justify-content:space-between;
+                    align-items:center;
+                    gap:10px;
+                ">
+
+                    <div>
+                        <div style="
+                            font-weight:800;
+                            font-size:14px;
+                            margin-bottom:6px;
+                        ">
+                            ${item.reason || 'Transaction'}
+                        </div>
+
+                        <div style="
+                            font-size:11px;
+                            color:var(--sub);
+                        ">
+                            ${dateTime}
+                        </div>
+                    </div>
+
+                    <div style="
+                        font-size:18px;
+                        font-weight:800;
+                        color:${amountColor};
+                        white-space:nowrap;
+                    ">
+                        ${amountText}
+                    </div>
+
+                </div>
+
+            </div>
+        `;
+
+    }).join('');
+}
+
+function watchAds2() {
+    if (!curUser) {
+        alert("Please login first!");
+        return;
+    }
+
+    // Yahan apna second Smartlink add karein
+    const smartLink2 = "https://recallscarce.com/d9m734phcp?key=f749bcec2027ca08ecb06664589bdde7";
+
+    window.open(smartLink2, "_blank");
+}
 </script>
 <div id="reward-page" class="page-overlay">
     <div class="page-header">
@@ -986,7 +1179,7 @@ function watchAds() {
                 <i data-lucide="users"></i>
                 Total Team Members
             </span>
-            <b id="team-total">0</b>
+            <b id="team-total">0</b>https://yogesh7206.github.io/earnrush/
         </div>
 
         <div class="list-item">
@@ -1017,11 +1210,38 @@ function watchAds() {
 
     <div class="page-header">
         <span class="back-btn" onclick="closePage()">&lt;</span>
-        <h3>Current Balance</h3>
+        <h3>Points History</h3>
     </div>
 
-    <!-- Future Balance Content -->
-    
-</div>
+    <div style="
+        background:var(--card);
+        padding:20px;
+        border-radius:20px;
+        border:1px solid var(--border);
+        margin-bottom:20px;
+    ">
+        <small style="color:var(--sub);">Current Balance</small>
+
+        <div
+            id="points-current-balance"
+            style="font-size:26px; font-weight:800; margin-top:5px;"
+        >
+            0.00
+        </div>
+    </div>
+
+    <h3 style="margin-bottom:12px;">Points History</h3>
+
+    <div id="points-history-list">
+        <p style="
+            text-align:center;
+            color:var(--sub);
+            margin-top:40px;
+        ">
+            Loading...
+        </p>
+    </div>
+
+</div>f
 </body>
 </html>

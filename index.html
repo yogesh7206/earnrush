@@ -360,7 +360,7 @@ function hideLoader() {
                 <h3>Mobile:</h3>
                 <div class="mob-val"><span id="u-mob-display">********</span> <i data-lucide="eye" onclick="toggleEye()" id="eye-btn" style="width:16px; cursor:pointer; color:var(--primary)"></i></div>
                 <div class="copy-box" onclick="copyInv()">
-                    <span>Invite: <b id="u-invite-display">---</b></span> <i data-lucide="copy" style="width:14px"></i>
+                    <span>Invite code: <b id="u-invite-display">---</b></span> <i data-lucide="copy" style="width:14px"></i>
                 </div>
             </div>
         </div>
@@ -529,7 +529,7 @@ function hideLoader() {
 
     let isReg = false, isHide = true, curUser = null;
 function generateInvite() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let code = '';
 
     for (let i = 0; i < 6; i++) {

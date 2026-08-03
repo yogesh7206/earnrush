@@ -1,4 +1,4 @@
-\<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -78,10 +78,34 @@ body {
 
         /* Pages & History */
         .page-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 99999; display: none; padding: 20px; overflow-y: auto; }
-        .page-header { display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 30px; height: 40px; }
-        .back-btn { position: absolute; left: 0; font-size: 24px; cursor: pointer; padding: 5px; }
-        .history-btn { position: absolute; right: 0; font-size: 14px; font-weight: 700; color: var(--primary); cursor: pointer; }
-        
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin-bottom: 30px;
+    height: 40px;
+    padding: 0 70px;
+}
+
+.back-btn {
+    position: absolute;
+    left: 0;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.history-btn {
+    position: absolute;
+    right: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--primary);
+    cursor: pointer;
+    padding: 8px 4px;
+    z-index: 2;
+}        
         .hist-card { background: white; padding: 15px; border-radius: 18px; border: 1px solid var(--border); margin-bottom: 12px; }
         .hist-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px; }
         .status-badge { padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; background: #fff7ed; color: #c2410c; }
@@ -130,58 +154,78 @@ body.dark .wd-chip{
     background:var(--card);
     color:var(--text);
 }
-.theme-toggle{
+.theme-icon {
     position: fixed;
     top: 15px;
     right: 15px;
     z-index: 999999;
-    width: 58px;
-    height: 30px;
-    border-radius: 30px;
-    background: #e5e7eb;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--border);
     cursor: pointer;
-    transition: .3s;
     display: flex;
     align-items: center;
-    padding: 3px;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.10);
 }
 
-.theme-toggle.active{
-    background: #10b981;
-}
-
-.theme-toggle .circle{
-    width: 24px;
-    height: 24px;
-    background: white;
-    border-radius: 50%;
-    transition: .3s;
-}
-
-.theme-toggle.active .circle{
-    transform: translateX(28px);
+.theme-icon i {
+    width: 20px;
+    height: 20px;
 }
 .app-title{
-    position: fixed;
+    position: absolute;
     top: 5px;
     left: 50%;
     transform: translateX(-50%);
     font-size: 22px;
     font-weight: 800;
     color: var(--primary);
-    z-index: 999999;
+    z-index: 100;
 }
   </style>
+<style>
+#loading-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999999;
+}
+
+.loading-spinner {
+    width: 45px;
+    height: 45px;
+    border: 5px solid #e5e7eb;
+    border-top: 5px solid var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+</style>
 </head>
 <body>
-<div class="app-title">Earn Rush</div>
-<div id="themeToggle" class="theme-toggle" onclick="toggleTheme()">
-    <div class="circle"></div>
+<div id="loading-screen">
+    <div class="loading-spinner"></div>
+</div>
+
+<div id="themeToggle" class="theme-icon" onclick="toggleTheme()">
+    <i data-lucide="sun"></i>
 </div>
 
 <div id="auth-screen">
     <div style="width:100%; max-width:360px;">
-        <h2 style="text-align:center" id="auth-title">Welcome</h2>
+        <h2 style="text-align:center" id="auth-title">Welcome To EarnRush</h2>
         <input 
     type="tel" 
     id="auth-mobile" 
@@ -198,11 +242,18 @@ body.dark .wd-chip{
             <input type="text" id="auth-invite-req" class="input-box" placeholder="6-Char Invite Code" maxlength="6">
         </div>
         <button class="main-btn" onclick="handleAuth()" id="auth-btn">Login</button>
-        <p style="text-align:center; color:var(--primary); font-weight:800; cursor:pointer; margin-top:20px" onclick="toggleAuth()" id="auth-toggle">Register New Account</p>
+        <p
+    style="text-align:center; color:var(--primary); font-weight:800; cursor:pointer; margin-top:20px"
+    onclick="toggleAuth()"
+    id="auth-toggle"
+>
+    Register New Account
+</p>
     </div>
 </div>
 
 <div id="app-dashboard">
+<div class="app-title">EarnRush</div>
     <div id="home-sec" class="section">
         <h2 style="padding:10px 0">Home</h2>
         <div class="large-card bal-card">
@@ -289,6 +340,13 @@ body.dark .wd-chip{
             'width' : 468,
             'params' : {}
         };
+function showLoader() {
+    document.getElementById('loading-screen').style.display = 'flex';
+}
+
+function hideLoader() {
+    document.getElementById('loading-screen').style.display = 'none';
+}
     </script>
 
     <script src="https://recallscarce.com/f2251dde2d5731325debb34b7a74a9b0/invoke.js"></script>
@@ -470,65 +528,203 @@ body.dark .wd-chip{
     const db = supabase.createClient(_URL, _KEY);
 
     let isReg = false, isHide = true, curUser = null;
+function generateInvite() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
 
-    function toggleAuth() {
-        isReg = !isReg;
-        document.getElementById('auth-title').innerText = isReg ? "Register" : "Welcome";
-        document.getElementById('register-fields').style.display = isReg ? "block" : "none";
-        document.getElementById('auth-btn').innerText = isReg ? "Sign Up" : "Login";
+    for (let i = 0; i < 6; i++) {
+        code += chars.charAt(
+            Math.floor(Math.random() * chars.length)
+        );
     }
 
-    function generateInvite() {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        let res = ''; for (let i = 0; i < 6; i++) res += chars.charAt(Math.floor(Math.random() * chars.length));
-        return res;
+    return code;
+}
+function toggleAuth() {
+    isReg = !isReg;
+
+    const title = document.getElementById('auth-title');
+    const registerFields = document.getElementById('register-fields');
+    const authBtn = document.getElementById('auth-btn');
+    const authToggle = document.getElementById('auth-toggle');
+
+    if (isReg) {
+        title.innerText = "Register";
+        registerFields.style.display = "block";
+        authBtn.innerText = "Sign Up";
+        authToggle.innerText = "Already have an account? Login";
+    } else {
+        title.innerText = "Welcome to EarnRush";
+        registerFields.style.display = "none";
+        authBtn.innerText = "Login";
+        authToggle.innerText = "Register New Account";
     }
+}
 
     async function handleAuth() {
+    showLoader();
+
+    try {
         const mob = document.getElementById('auth-mobile').value;
         const pass = document.getElementById('auth-pass').value;
         const conf = document.getElementById('auth-confirm').value;
         const invInp = document.getElementById('auth-invite-req').value;
 
-        if(!mob || !pass) return alert("Fill all details!");
+        if (!mob || !pass) {
+            alert("Fill all details!");
+            return;
+        }
 
-if(!/^\d{10}$/.test(mob)) {
-    return alert("Mobile number must be exactly 10 digits!");
-}
-        if(isReg) {
-            if(pass !== conf) return alert("Passwords mismatch!");
-            if(invInp.length !== 6) return alert("Invite code must be 6 characters!");
-            const { data: invCheck } = await db.from('profiles').select('invite_code').eq('invite_code', invInp).single();
-            if(!invCheck) return alert("Invalid Invite Code!");
+        if (!/^\d{10}$/.test(mob)) {
+            alert("Mobile number must be exactly 10 digits!");
+            return;
+        }
+
+        if (isReg) {
+
+            if (pass !== conf) {
+                alert("Passwords mismatch!");
+                return;
+            }
+
+            if (invInp.length !== 6) {
+                alert("Invite code must be 6 characters!");
+                return;
+            }
+
+            const { data: invCheck } = await db
+                .from('profiles')
+                .select('invite_code')
+                .eq('invite_code', invInp)
+                .single();
+
+            if (!invCheck) {
+                alert("Invalid Invite Code!");
+                return;
+            }
+
             const myNewInv = generateInvite();
-           const { data: bonusConfig } = await db
-    .from('config')
-    .select('*')
-    .eq('key', 'registration_bonus')
+
+            const { data: bonusConfig } = await db
+                .from('config')
+                .select('*')
+                .eq('key', 'registration_bonus')
+                .single();
+
+            let regBonus = 0;
+
+            if (bonusConfig && bonusConfig.is_active) {
+                regBonus = Number(bonusConfig.value || 0);
+            }
+
+           const { data: functionData, error: functionError } =
+    await db.functions.invoke('register-account', {
+        body: {
+            mobile: mob,
+            password: pass,
+            invite_code: myNewInv,
+            referred_by: invInp,
+            registration_bonus: regBonus
+        }
+    });
+
+console.log("FUNCTION DATA:", functionData);
+console.log("FUNCTION ERROR:", functionError);
+
+if (functionError) {
+    console.error("FUNCTION ERROR:", functionError);
+
+    let errorText = "";
+
+    try {
+        if (functionError.context) {
+            errorText = await functionError.context.text();
+        }
+    } catch (e) {
+        console.error("Could not read error response:", e);
+    }
+
+    alert(
+        "Function Error:\n" +
+        (errorText || functionError.message || JSON.stringify(functionError))
+    );
+
+    return;
+}
+
+if (!functionData) {
+    alert("No response from Edge Function!");
+    return;
+}
+
+if (!functionData.success) {
+    alert(
+        "Registration Error: " +
+        (functionData.message || "Unknown error")
+    );
+    return;
+}
+
+alert("Registered!");
+toggleAuth();     
+        } else {
+
+            const { data, error } = await db
+                .from('profiles')
+                .select('*')
+                .eq('mobile', mob)
+                .eq('password', pass)
+                .single();
+
+            if (error || !data) {
+                alert("Wrong Credentials!");
+                return;
+            }
+
+            const sessionToken = crypto.randomUUID();
+
+const { data: updatedUser, error: sessionError } = await db
+    .from('profiles')
+    .update({
+        session_token: sessionToken
+    })
+    .eq('mobile', mob)
+    .select()
     .single();
 
-let regBonus = 0;
-
-if (bonusConfig && bonusConfig.is_active) {
-    regBonus = Number(bonusConfig.value || 0);
+if (sessionError || !updatedUser) {
+    alert("Login session could not be created!");
+    return;
 }
 
-const { error } = await db.from('profiles').insert([{
-    mobile: mob,
-    password: pass,
-    invite_code: myNewInv,
-    balance: regBonus
-}]);
-            if(error) return alert("Account already exists!");
-            alert("Registered!"); toggleAuth();
-        } else {
-            const { data, error } = await db.from('profiles').select('*').eq('mobile', mob).eq('password', pass).single();
-            if(error || !data) return alert("Wrong Credentials!");
-           curUser = data;
-localStorage.setItem('loggedUser', JSON.stringify(data));
+curUser = updatedUser;
+
+localStorage.setItem(
+    'loggedUser',
+    JSON.stringify(updatedUser)
+);
+
+localStorage.setItem(
+    'sessionToken',
+    sessionToken
+);
+
 startApp();
         }
+} catch (error) {
+
+    console.error("Auth Error:", error);
+
+    alert(
+        "Auth Error:\n" +
+        (error?.message || JSON.stringify(error))
+    );
+
+} finally {
+        hideLoader();
+
     }
+}
 
     function startApp() {
         document.getElementById('auth-screen').style.display = 'none';
@@ -611,14 +807,21 @@ startApp();
     function toggleEye() { isHide = !isHide; updateUI(); }
     
     function openPage(id) { 
-    document.getElementById(id).style.display = 'block'; 
 
-       // Points History
-    if(id === 'balance-page' && curUser) {
+    document.getElementById(id).style.display = 'block';
+
+    // Hide theme button on Withdrawal page
+    if (id === 'withdraw-page') {
+        document.getElementById('themeToggle').style.display = 'none';
+    }
+
+    // Points History
+    if (id === 'balance-page' && curUser) {
         loadPointsHistory();
     }
- // Bank Card Prefill
-    if(id === 'bank-page' && curUser) {
+
+    // Bank Card Prefill
+    if (id === 'bank-page' && curUser) {
         document.getElementById('b-holder').value = curUser.acc_holder_name || '';
         document.getElementById('b-name').value = curUser.bank_name || '';
         document.getElementById('b-acc').value = curUser.account_no || '';
@@ -626,7 +829,7 @@ startApp();
     }
 
     // My Team Page
-    if(id === 'team-page') {
+    if (id === 'team-page') {
         loadTeamDetails();
     }
 }
@@ -700,8 +903,15 @@ async function loadTeamDetails() {
         </div>
     `).join('');
 }
-    function closePage() { document.querySelectorAll('.page-overlay').forEach(p => p.style.display = 'none'); }
-    
+    function closePage() {
+
+    document.querySelectorAll('.page-overlay').forEach(p => {
+        p.style.display = 'none';
+    });
+
+    // Show theme button again
+    document.getElementById('themeToggle').style.display = 'flex';
+}    
     function tab(id, el) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById(id + '-sec').classList.add('active');
@@ -788,27 +998,41 @@ function toggleTheme(){
             .eq('mobile', localUser.mobile)
             .single();
 
-        if(data){
+      if(data){
 
-            curUser = data;
+    const savedToken = localStorage.getItem('sessionToken');
 
-            localStorage.setItem(
-                'loggedUser',
-                JSON.stringify(data)
-            );
+    // Check if saved session exists
+    if(!savedToken || data.session_token !== savedToken){
 
-            document.getElementById('auth-screen').style.display = 'none';
-            document.getElementById('app-dashboard').style.display = 'block';
-            document.getElementById('bottom-tabs').style.display = 'flex';
+        localStorage.removeItem('loggedUser');
+        localStorage.removeItem('sessionToken');
 
-            updateUI();
-        }
+        curUser = null;
+
+        return;
+    }
+
+    curUser = data;
+
+    localStorage.setItem(
+        'loggedUser',
+        JSON.stringify(data)
+    );
+
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app-dashboard').style.display = 'block';
+    document.getElementById('bottom-tabs').style.display = 'flex';
+
+    updateUI();
+}
     }
 });
     lucide.createIcons();
 function logoutUser(){
 
     localStorage.removeItem('loggedUser');
+    localStorage.removeItem('sessionToken');
 
     curUser = null;
 
@@ -817,6 +1041,30 @@ function logoutUser(){
     document.getElementById('auth-screen').style.display = 'flex';
 
 }
+setInterval(async () => {
+
+    if (!curUser) return;
+
+    const savedToken = localStorage.getItem('sessionToken');
+
+    if (!savedToken) return;
+
+    const { data, error } = await db
+        .from('profiles')
+        .select('session_token')
+        .eq('mobile', curUser.mobile)
+        .single();
+
+    if (error || !data) return;
+
+    if (data.session_token !== savedToken) {
+
+        alert("Your account was logged in from another device.");
+
+        logoutUser();
+    }
+
+}, 10000);
 let dailyCountdownInterval;
 
 function getTodayDate() {
@@ -1226,6 +1474,6 @@ async function loadPointsHistory() {
         </p>
     </div>
 
-</div>f
+</div>
 </body>
 </html>

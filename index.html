@@ -680,6 +680,10 @@ toggleAuth();
                 alert("Wrong Credentials!");
                 return;
             }
+if (data.status === 'banned') {
+    alert("Your account has been banned by admin.");
+    return;
+}
 
             const sessionToken = crypto.randomUUID();
 
@@ -732,6 +736,38 @@ startApp();
         document.getElementById('bottom-tabs').style.display = 'flex';
         updateUI();
     }
+async function checkBanStatus() {
+    if (!curUser || !curUser.mobile) {
+        return;
+    }
+
+    const { data: user, error } = await db
+        .from('profiles')
+        .select('status')
+        .eq('mobile', curUser.mobile)
+        .single();
+
+    if (error) {
+        console.error("Ban Status Check Error:", error);
+        return;
+    }
+
+    if (user && user.status === 'banned') {
+        alert("Your account has been banned by admin.");
+
+        curUser = null;
+
+        localStorage.removeItem('loggedUser');
+        localStorage.removeItem('sessionToken');
+
+        document.getElementById('app-dashboard').style.display = 'none';
+        document.getElementById('bottom-tabs').style.display = 'none';
+        document.getElementById('auth-screen').style.display = 'flex';
+
+        location.reload();
+    }
+}
+setInterval(checkBanStatus, 1000);
 
     function updateUI() {
         document.getElementById('u-bal').innerText = "₹ " + curUser.balance.toFixed(2);

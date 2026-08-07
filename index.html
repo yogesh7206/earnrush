@@ -155,7 +155,7 @@ body.dark .wd-chip{
     color:var(--text);
 }
 .theme-icon {
-    position: fixed;
+    position: absolute;
     top: 15px;
     right: 15px;
     z-index: 999999;
@@ -372,7 +372,7 @@ function hideLoader() {
 
     <div>
         <small>Current Balance</small>
-        <div style="font-size:26px; font-weight:800" id="u-bal">₹ 0.00</div>
+        <div style="font-size:26px; font-weight:800" id="u-bal">0.00</div>
     </div>
 
     <i data-lucide="chevron-right" style="margin-left:auto;"></i>
@@ -801,26 +801,65 @@ setInterval(checkBanStatus, 1000);
         el.classList.add('active');
     }
 
-    async function processWithdraw() {
-        const amt = parseFloat(document.getElementById('wd-amt').value);
-        if(!curUser.acc_holder_name) return alert("Bind Bank Card first!");
-        if(!amt || amt > curUser.balance) return alert("Invalid Amount/Low Balance!");
+ async function processWithdraw() {
+    const amt = parseFloat(document.getElementById('wd-amt').value);
 
-        const { error: balErr } = await db.from('profiles').update({ balance: curUser.balance - amt }).eq('mobile', curUser.mobile);
-        if(balErr) return alert("Failed!");
+    if (!curUser.acc_holder_name) {
+        return alert("Bind Bank Card first!");
+    }
 
-        await db.from('withdrawals').insert([{
+    if (!amt || amt <= 0 || amt > Number(curUser.balance)) {
+        return alert("Invalid Amount / Low Balance!");
+    }
+
+    const newBalance = Number(curUser.balance) - amt;
+
+    // Balance update
+    const { error: balErr } = await db
+        .from('profiles')
+        .update({ balance: newBalance })
+        .eq('mobile', curUser.mobile);
+
+    if (balErr) return alert("Balance update failed!");
+
+    // Withdrawal create + unique withdrawal ID receive
+    const { data: withdrawal, error: withdrawalError } = await db
+        .from('withdrawals')
+        .insert({
             user_mobile: curUser.mobile,
             amount: amt,
             status: 'Pending'
-        }]);
+        })
+        .select('id')
+        .single();
 
-        curUser.balance -= amt;
-        updateUI();
-        alert("Submitted!");
-        closePage();
+    if (withdrawalError) {
+        return alert("Withdrawal save failed!");
     }
 
+    // Same withdrawal ID Points History mein save hogi
+    const { error: pointsError } = await db
+        .from('points_details')
+        .insert({
+            mobile_no: curUser.mobile,
+            invite_code: curUser.invite_code,
+            withdrawal_id: withdrawal.id,
+            amount: -amt,
+            reason: 'Withdrawal',
+            post_balance: newBalance
+        });
+
+    if (pointsError) {
+        return alert("Points History save error: " + pointsError.message);
+    }
+
+    curUser.balance = newBalance;
+    localStorage.setItem('loggedUser', JSON.stringify(curUser));
+
+    updateUI();
+    alert("Withdrawal submitted!");
+    closePage();
+}
     async function openWithdrawHistory() {
         const list = document.getElementById('history-list');
         list.innerHTML = "<p style='text-align:center'>Loading...</p>";
@@ -1209,7 +1248,6 @@ function updateDailyCheckInUI() {
 
 
 async function completeDailyCheckIn() {
-
     if (!curUser) {
         alert("Please login first!");
         return;
@@ -1217,7 +1255,6 @@ async function completeDailyCheckIn() {
 
     const today = getTodayDate();
 
-    // Prevent double claim
     const lastCheckIn = localStorage.getItem(
         'dailyCheckIn_' + curUser.mobile
     );
@@ -1228,60 +1265,54 @@ async function completeDailyCheckIn() {
         return;
     }
 
-    // Reward is now ₹1
     const reward = 1;
+    const newBalance = Number(curUser.balance || 0) + reward;
 
-    const newBalance =
-        Number(curUser.balance) + reward;
-
-    // Update Supabase balance
-    const { error } = await db
+    // 1. Update balance in profiles table
+    const { error: balanceError } = await db
         .from('profiles')
         .update({
             balance: newBalance
         })
         .eq('mobile', curUser.mobile);
 
-    if (error) {
-        console.error(error);
-        alert("Claim failed. Please try again!");
+    if (balanceError) {
+        console.error('Balance Error:', balanceError);
+        alert("Claim failed: " + balanceError.message);
         return;
     }
 
-    // Update current user
+    // 2. Save transaction in points_details table
+    const { error: pointsError } = await db
+        .from('points_details')
+        .insert({
+            mobile_no: curUser.mobile,
+            invite_code: curUser.invite_code,
+            amount: reward,
+            reason: 'Daily Check-in',
+            post_balance: newBalance
+        });
+
+    if (pointsError) {
+        console.error('Points History Error:', pointsError);
+        alert("Balance update ho gaya, lekin history save nahi hui: " + pointsError.message);
+        return;
+    }
+
+    // 3. Update app user data only after both saves succeed
     curUser.balance = newBalance;
 
-    // Save updated user
     localStorage.setItem(
         'loggedUser',
         JSON.stringify(curUser)
     );
-// Add Daily Check-in transaction to points history
-const { error: pointsError } = await db
-    .from('points_details')
-    .insert([{
-        user_id: curUser.id,
-        mobile_no: curUser.mobile,
-        invite_code: curUser.invite_code,
-        amount: 1,
-        reason: 'Daily Check-in',
-        post_balance: newBalance
-    }]);
 
-if (pointsError) {
-    console.error('Points History Error:', pointsError);
-}
-
-    // Mark today's task as claimed
     localStorage.setItem(
         'dailyCheckIn_' + curUser.mobile,
         today
     );
 
-    // Update balance
     updateUI();
-
-    // Update claim button and countdown
     updateDailyCheckInUI();
 
     alert("Daily Check-in claimed! ₹1 added to your balance.");
@@ -1376,10 +1407,31 @@ async function loadPointsHistory() {
                 ? '+' + amount.toFixed(2)
                 : amount.toFixed(2);
 
-        const amountColor =
-            amount >= 0
-                ? 'var(--primary)'
-                : '#ef4444';
+        const rawReason = item.reason || 'Transaction';
+
+const isWithdrawal =
+    rawReason.toLowerCase().includes('withdrawal');
+
+const isDeduction =
+    rawReason.toLowerCase().includes('deduct');
+
+const isGift =
+    rawReason.toLowerCase().includes('gift');
+
+const amountColor =
+    amount >= 0
+        ? 'var(--primary)'
+        : (isWithdrawal || isDeduction)
+            ? '#111827'
+            : '#ef4444';
+
+const displayReason = isWithdrawal
+    ? 'Withdrawal'
+    : isDeduction
+        ? 'Deduction'
+        : isGift
+            ? 'System Gift'
+            : rawReason;
 
         const dateTime =
             new Date(item.created_at).toLocaleString();
@@ -1400,7 +1452,7 @@ async function loadPointsHistory() {
                             font-size:14px;
                             margin-bottom:6px;
                         ">
-                            ${item.reason || 'Transaction'}
+                            ${displayReason}
                         </div>
 
                         <div style="

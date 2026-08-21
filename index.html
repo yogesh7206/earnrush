@@ -3,10 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NexGen Premium White</title>
+    <title>EarnRush</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="manifest" href="/earnrush/manifest.json">
+<meta name="theme-color" content="#10b981">
+<link rel="apple-touch-icon" href="/earnrush/icon-192.png">
+
     <style>
         :root {
     --primary: #10b981;
@@ -213,6 +217,15 @@ body.dark .wd-chip{
     }
 }
 </style>
+<script>
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/earnrush/sw.js")
+            .then(() => console.log("EarnRush Service Worker registered"))
+            .catch(error => console.error("Service Worker error:", error));
+    });
+}
+</script>
 </head>
 <body>
 <div id="loading-screen">

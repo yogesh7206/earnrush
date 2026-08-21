@@ -2,6 +2,7 @@
   "name": "EarnRush",
   "short_name": "EarnRush",
   "start_url": "/earnrush/",
+  "scope": "/earnrush/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",

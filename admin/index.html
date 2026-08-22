@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EarnRush Admin</title>    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        :root { --accent: #3b82f6; }
+        body { background: #f8fafc; font-family: 'Inter', sans-serif; color: #1e293b; }
+        .sidebar { transition: all 0.3s ease; background: white; border-right: 1px solid #e2e8f0; }
+        @media (max-width: 768px) { .sidebar { transform: translateX(-100%); position: fixed; z-index: 100; height: 100%; } .sidebar.open { transform: translateX(0); } }
+        .active-link { background: var(--accent) !important; color: white !important; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+        
+        .table-scroll::-webkit-scrollbar { height: 6px; }
+        .table-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        th, td { white-space: nowrap; }
+        
+        /* Toggle Switch Style */
+        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #10b981; }
+        input:checked + .slider:before { transform: translateX(26px); }
+    </style>
+</head>
+<body class="text-sm">
+
+    <div id="login-screen" class="fixed inset-0 bg-slate-50 z-[200] flex items-center justify-center p-6">
+        <div class="w-full max-sm text-center">
+<img
+    src="earnrush-logo.jpeg"
+    alt="EarnRush Logo"
+    class="mb-5 mx-auto block h-28 w-28 rounded-3xl object-cover shadow-lg"
+>
+            <h2 class="text-2xl font-black mb-2 text-slate-800 uppercase italic">EarnRush</h2>
+            <input type="text" id="admin-mobile" placeholder="7206343481" class="w-full bg-white border border-slate-200 p-4 rounded-2xl mb-4 text-center font-bold outline-none">
+            <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-bold shadow-lg">SYSTEM ACCESS</button>
+        </div>
+    </div>
+
+    <div id="app-ui" class="hidden flex min-h-screen">
+        <aside id="main-sidebar" class="sidebar w-72 flex flex-col shadow-xl">
+            <div class="p-8 flex items-center justify-between">
+                <span class="font-black text-blue-600 text-2xl italic uppercase">EarnRush Admin</span>
+                <button class="md:hidden text-slate-400" onclick="toggleSide()"><i class="fas fa-times"></i></button>
+            </div>
+            <nav class="flex-grow px-4 space-y-1">
+                <button onclick="tab('dash')" id="tab-dash" class="w-full flex items-center p-4 rounded-2xl text-slate-500 font-semibold transition active-link"><i class="fas fa-home-alt w-8"></i> Dash</button>
+                <button onclick="tab('config')" id="tab-config" class="w-full flex items-center p-4 rounded-2xl text-slate-500 font-semibold transition"><i class="fas fa-cog w-8 text-slate-400"></i> Settings</button>
+                <button onclick="tab('users')" id="tab-users" class="w-full flex items-center p-4 rounded-2xl text-slate-500 font-semibold transition"><i class="fas fa-users w-8"></i> User List</button>
+                <button onclick="tab('withdrawals')" id="tab-withdrawals" class="w-full flex items-center p-4 rounded-2xl text-slate-500 font-semibold transition"><i class="fas fa-hand-holding-usd w-8 text-orange-500"></i> Withdrawals</button>
+                <button onclick="tab('bank')" id="tab-bank" class="w-full flex items-center p-4 rounded-2xl text-slate-500 font-semibold transition"><i class="fas fa-university w-8"></i> Banks</button>
+                <button onclick="tab('wallet')" id="tab-wallet" class="w-full flex items-center p-4 rounded-2xl text-slate-500 font-semibold transition">
+    <i class="fas fa-wallet w-8 text-green-500"></i> Wallet Manager
+</button>
+                <button onclick="tab('points')" id="tab-points" class="w-full flex items-center p-4 rounded-2xl text-slate-500 font-semibold transition">
+    <i class="fas fa-coins w-8 text-yellow-500"></i> Point Details
+</button>
+            </nav>
+            <div class="p-6"><button onclick="logoutAdmin()" class="w-full p-4 bg-red-50 text-red-600 rounded-2xl font-bold border border-red-100 uppercase text-[10px]">Logout</button></div>
+        </aside>
+
+        <main class="flex-grow flex flex-col overflow-hidden">
+            <header class="h-16 flex items-center justify-between px-6 border-b border-slate-200 bg-white shrink-0">
+                <button onclick="toggleSide()" class="md:hidden text-blue-600 text-xl"><i class="fas fa-bars-staggered"></i></button>
+                <h1 id="page-title" class="text-[10px] font-black uppercase text-slate-400">Loading...</h1>
+                <div class="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center font-bold text-white italic">Y</div>
+            </header>
+            <div id="view" class="p-4 md:p-10 overflow-y-auto custom-scroll flex-grow"></div>
+        </main>
+    </div>
+
+    <script>
+        const SB_URL = 'https://hhzspyfwhrdwyzmebljz.supabase.co';
+        const SB_KEY = 'sb_publishable_-7oNoTs6qf3YfYb9_22FDw_jG61vyjy';
+        const _db = supabase.createClient(SB_URL, SB_KEY);
+        let cachedUsers = [];
+
+        function handleLogin() {
+    if (document.getElementById('admin-mobile').value === '7206343481') {
+        localStorage.setItem('adminLoggedIn', 'true');
+
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('app-ui').classList.remove('hidden');
+
+        tab(localStorage.getItem('adminLastPage') || 'dash');
+    } else {
+        alert('Unauthorized!');
+    }
+}
+
+        function toggleSide() { document.getElementById('main-sidebar').classList.toggle('open'); }
+
+        async function tab(name) {
+            localStorage.setItem('adminLastPage', name);
+
+            const view = document.getElementById('view');
+            const title = document.getElementById('page-title');
+            if(window.innerWidth < 768) document.getElementById('main-sidebar').classList.remove('open');
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-link'));
+            document.getElementById('tab-'+name)?.classList.add('active-link');
+
+            if(name === 'dash') {
+                title.innerText = "OVERVIEW";
+                view.innerHTML = `<div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm max-w-sm"><p class="text-[10px] font-black text-slate-400 uppercase">Live Users</p><h2 id="dc" class="text-5xl font-black text-slate-800 italic">...</h2></div>`;
+                const { count } = await _db.from('profiles').select('*', { count: 'exact', head: true });
+                document.getElementById('dc').innerText = count || 0;
+            }
+
+            else if(name === 'config') {
+                title.innerText = "SYSTEM SETTINGS";
+                view.innerHTML = `
+                    <div class="max-w-md bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-8">
+                        <div>
+                            <h3 class="font-black text-slate-800 italic uppercase mb-4">Registration Bonus</h3>
+                            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                <span class="font-bold text-slate-600 uppercase text-[11px]">Bonus Status</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="bonus-toggle" onchange="updateBonusSettings()">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="mt-4">
+                                <label class="text-[10px] font-black text-slate-400 uppercase ml-2">Bonus Amount (₹)</label>
+                                <input type="number" id="bonus-amt" class="w-full mt-1 bg-slate-50 border border-slate-200 p-4 rounded-2xl outline-none font-bold text-blue-600" placeholder="e.g. 20">
+                            </div>
+                            <button onclick="updateBonusSettings()" class="w-full mt-6 bg-blue-600 text-white p-4 rounded-2xl font-black uppercase shadow-lg hover:bg-blue-700 transition">Save Settings</button>
+                        </div>
+                    </div>`;
+                
+                // Fetch settings from Supabase (assuming table name 'config')
+                const { data } = await _db.from('config').select('*').eq('key', 'registration_bonus').single();
+                if(data) {
+                    document.getElementById('bonus-toggle').checked = data.is_active;
+                    document.getElementById('bonus-amt').value = data.value;
+                }
+            }
+
+            else if(name === 'users') {
+                title.innerText = "USER LIST";
+                view.innerHTML = `<div class="mb-6"><input type="text" id="us" oninput="filterUsers()" placeholder="Search Mobile/Code" class="w-full md:w-96 bg-white border border-slate-200 p-4 rounded-2xl outline-none shadow-sm"></div>
+                    <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto table-scroll">
+                            <table class="w-full text-left">
+                                <thead class="text-[9px] text-slate-400 bg-slate-50 uppercase">
+                                    <tr>
+<th class="p-4">Mobile</th>
+<th class="p-4">Invite Code</th>
+<th class="p-4">Balance</th>
+<th class="p-4">Registered</th>
+<th class="p-4">Referred By</th>
+<th class="p-4">Status</th>
+<th class="p-4">Session Token</th>
+<th class="p-4">Last IP</th>
+<th class="p-4">Action</th>
+</tr>
+                                </thead>
+                                <tbody id="ut" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>`;
+                const { data } = await _db.from('profiles').select('*').order('registered_time', {ascending:false});
+                cachedUsers = data || [];
+                displayUsers(cachedUsers);
+            }
+
+            else if(name === 'withdrawals') {
+                title.innerText = "WITHDRAWAL REQUESTS";
+                view.innerHTML = `<div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden"><div class="overflow-x-auto table-scroll"><table class="w-full text-left"><thead class="text-[9px] text-slate-400 bg-slate-50 uppercase"><tr><th class="p-4">User Details</th><th class="p-4">Amount</th><th class="p-4">Bank Information</th><th class="p-4">Date/Time</th><th class="p-4">Status</th><th class="p-4">Action</th></tr></thead><tbody id="wt" class="divide-y divide-slate-100"></tbody></table></div></div>`;
+                const { data } = await _db.from('withdrawals').select('*, profiles(mobile, invite_code, bank_name, account_no, ifsc_code, acc_holder_name)').order('created_at', {ascending:false});
+                const wt = document.getElementById('wt');
+                (data || []).forEach(w => {
+                    const p = w.profiles || {};
+                    const currentStatus = (w.status || 'processing').toLowerCase();
+                    const isLocked = currentStatus === 'successful' || currentStatus === 'failed';
+                    const statusColor = currentStatus === 'successful' ? 'text-green-500' : (currentStatus === 'processing' ? 'text-orange-500' : 'text-red-500');
+                    wt.innerHTML += `<tr><td class="p-4"><div class="font-black text-blue-600 text-base">${w.mobile || p.mobile || 'N/A'}</div><div class="text-[10px] text-slate-400 font-bold uppercase mt-1">Invite Code: <span class="text-slate-800">${p.invite_code || '--'}</span></div></td><td class="p-4"><div class="text-xl font-black text-slate-900">₹${w.amount}</div></td><td class="p-4"><div class="space-y-1 text-[11px]"><div class="flex gap-2"><span class="text-slate-400 w-16">Bank:</span><span class="font-bold text-slate-800">${p.bank_name || '--'}</span></div><div class="flex gap-2"><span class="text-slate-400 w-16">Acc No:</span><span class="font-bold text-slate-800">${p.account_no || '--'}</span></div><div class="flex gap-2"><span class="text-slate-400 w-16">IFSC:</span><span class="font-bold text-slate-800">${p.ifsc_code || '--'}</span></div><div class="flex gap-2"><span class="text-slate-400 w-16">Holder:</span><span class="font-bold text-blue-500 uppercase">${p.acc_holder_name || '--'}</span></div></div></td><td class="p-4 text-slate-400 text-[10px] font-semibold">${new Date(w.created_at).toLocaleString()}</td><td class="p-4"><span class="px-3 py-1 rounded-full text-[10px] font-black uppercase ${statusColor} bg-slate-50 border border-slate-100">${currentStatus}</span></td><td class="p-4">${isLocked ? '<i class="fas fa-lock text-slate-300 ml-4"></i>' : `<select onchange="updateWithdrawalStatus('${w.id}', this.value)" class="bg-blue-600 text-white rounded-xl px-3 py-2 text-[10px] font-bold outline-none cursor-pointer hover:bg-blue-700 shadow-md"><option value="" selected disabled>UPDATE STATUS</option><option value="successful">Mark Successful</option><option value="failed">Mark Failed</option></select>`}</td></tr>`;
+                });
+            }
+            
+            else if(name === 'bank') {
+                title.innerText = "BANK RECORDS";
+                view.innerHTML = `<div class="max-w-md space-y-4"><input type="text" id="bs" placeholder="Enter Mobile/Code" class="w-full bg-white border border-slate-200 p-4 rounded-2xl outline-none shadow-sm"><button onclick="searchBank()" class="w-full bg-blue-600 text-white p-4 rounded-2xl font-bold shadow-lg">FIND BANK</button></div><div id="br" class="mt-4"></div>`;
+            }
+            else if(name === 'wallet') {
+
+    title.innerText = "WALLET MANAGER";
+
+    view.innerHTML = `
+    <div class="w-full bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-4">
+
+        <input type="text" id="wq"
+        placeholder="Mobile Number / Invite Code"
+        class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl">
+
+        <input type="number" id="wa"
+        placeholder="Amount"
+        class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl">
+
+        <select id="wallet-action"
+        class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl">
+
+            <option value="gift">Gift / Add Money</option>
+            <option value="deduct">Deduct Money</option>
+
+        </select>
+
+        <button
+        onclick="updateWallet(document.getElementById('wallet-action').value)"
+        class="w-full bg-blue-600 text-white p-4 rounded-2xl font-bold">
+
+            Update Wallet
+
+        </button>
+<div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden mt-6">
+
+<div class="p-4 border-b">
+<h2 class="font-bold">Wallet History</h2>
+<input 
+type="text" 
+id="walletSearch"
+oninput="filterWalletHistory()"
+placeholder="Search Mobile / Invite Code"
+class="w-full mt-4 bg-slate-50 border border-slate-200 p-4 rounded-2xl outline-none">
+</div>
+
+<div class="overflow-x-auto table-scroll">
+
+<table class="w-full text-left">
+
+<thead>
+
+<tr>
+<th class="p-4">ID</th>
+<th class="p-4">Mobile</th>
+<th class="p-4">Invite</th>
+<th class="p-4">Type</th>
+<th class="p-4">Amount</th>
+<th class="p-4">Reason</th>
+<th class="p-4">Balance</th>
+<th class="p-4">Time</th>
+</tr>
+
+</thead>
+
+<tbody id="walletHistory"></tbody>
+
+</table>
+
+</div>
+
+</div>
+
+    </div>`;
+
+loadWalletHistory();
+
+}
+else if(name === 'points') {
+
+    title.innerText = "POINT DETAILS";
+
+    view.innerHTML = `
+
+    <div class="bg-white p-6 rounded-3xl border">
+        <h2 class="font-black text-lg">
+            All Transaction History
+        </h2>
+    </div>
+
+    `;
+
+}
+      }
+
+        // Functions
+       async function updateBonusSettings() {
+    const isActive = document.getElementById('bonus-toggle').checked;
+    const amount = document.getElementById('bonus-amt').value;
+
+    const { error } = await _db.from('config').upsert({
+        key: 'registration_bonus',
+        value: amount,
+        is_active: isActive
+    });
+
+    if(error){
+        console.log(error);
+        alert(error.message);
+    }else{
+        alert("Settings Updated!");
+    }
+}
+        function displayUsers(users) {
+
+    const ut = document.getElementById('ut');
+    ut.innerHTML = "";
+
+    users.forEach(u => {
+
+        ut.innerHTML += `
+        <tr>
+
+        <td class="p-4 font-bold text-blue-600">
+        ${u.mobile || '--'}
+        </td>
+
+        <td class="p-4 text-slate-400 font-mono">
+        ${u.invite_code || '--'}
+        </td>
+
+        <td class="p-4 font-black">
+        ₹${u.balance || 0}
+        </td>
+
+        <td class="p-4 text-xs">
+        ${u.registered_time ? new Date(u.registered_time).toLocaleString() : '--'}
+        </td>
+
+        <td class="p-4">
+        ${u.referred_by || '--'}
+        </td>
+
+        <td class="p-4">
+        ${u.status || '--'}
+        </td>
+
+        <td class="p-4 text-xs break-all">
+        ${u.session_token || '--'}
+        </td>
+
+        <td class="p-4 text-xs">
+        ${u.last_ip || '--'}
+        </td>
+
+        <td class="p-4 flex gap-3">
+
+        <button onclick="ban('${u.mobile}','${u.status}')"
+        class="text-slate-300 hover:text-orange-500">
+        <i class="fas fa-user-slash"></i>
+        </button>
+
+        <button onclick="deleteUser('${u.mobile}')"
+        class="text-slate-300 hover:text-red-600">
+        <i class="fas fa-trash-alt"></i>
+        </button>
+
+        </td>
+
+        </tr>
+        `;
+
+    });
+
+}
+        async function updateWithdrawalStatus(id, status) {
+            if(!confirm(`Set as ${status}? This action is final.`)) return;
+            const { error } = await _db.from('withdrawals').update({status: status}).eq('id', id);
+            if(!error) { alert("Status Locked!"); tab('withdrawals'); }
+        }
+
+        async function searchBank() {
+            const q = document.getElementById('bs').value;
+            const { data } = await _db.from('profiles').select('*').or(`mobile.eq.${q},invite_code.eq.${q}`).single();
+            if(!data) return document.getElementById('br').innerHTML = "<p class='text-red-500'>Not Found!</p>";
+            document.getElementById('br').innerHTML = `<div class="bg-slate-50 p-6 rounded-3xl border border-slate-200"><p class="font-bold text-blue-600 mb-4">${data.mobile}</p><div class="grid grid-cols-1 gap-2 text-[10px] uppercase font-bold text-slate-500"><p>Bank: <span class="text-slate-900">${data.bank_name || '--'}</span></p><p>A/C: <span class="text-slate-900">${data.account_no || '--'}</span></p><p>IFSC: <span class="text-slate-900">${data.ifsc_code || '--'}</span></p><p>Holder: <span class="text-slate-900">${data.acc_holder_name || '--'}</span></p></div><button onclick="clearBank('${data.mobile}')" class="mt-4 w-full bg-white text-red-500 border border-red-100 p-3 rounded-xl text-[9px] font-black">DELETE BANK DETAILS</button></div>`;
+        }
+
+        async function clearBank(mobile) {
+            if(!confirm("Clear bank data?")) return;
+            const { error } = await _db.from('profiles').update({ bank_name: null, account_no: null, ifsc_code: null, acc_holder_name: null }).eq('mobile', mobile);
+            if(!error) { alert("Bank Cleared!"); searchBank(); }
+        }
+
+        async function deleteUser(mobile) {
+            if(!confirm("Delete user permanent?")) return;
+            const { error } = await _db.from('profiles').delete().eq('mobile', mobile);
+            if(!error) { alert("Deleted!"); tab('users'); }
+        }
+
+        function filterUsers() {
+            const q = document.getElementById('us').value.toLowerCase();
+            displayUsers(cachedUsers.filter(u => u.mobile.includes(q) || (u.invite_code && u.invite_code.toLowerCase().includes(q))));
+        }
+
+async function updateWallet(type) {
+    const q = document.getElementById('wq').value.trim();
+    const a = parseFloat(document.getElementById('wa').value);
+
+    if (!q || isNaN(a) || a <= 0) {
+        return alert("Enter valid details!");
+    }
+
+    const { data: users, error: userError } = await _db
+        .from('profiles')
+        .select('mobile, invite_code, balance')
+        .or(`mobile.eq.${q},invite_code.eq.${q}`);
+
+    if (userError) {
+        return alert("User search failed: " + userError.message);
+    }
+
+    if (!users || users.length === 0) {
+        return alert("User not found! Check Mobile Number or Invite Code.");
+    }
+
+    const u = users[0];
+    const oldBalance = Number(u.balance || 0);
+
+    const nb = type === 'gift'
+        ? oldBalance + a
+        : oldBalance - a;
+
+    if (nb < 0) {
+        return alert("Insufficient balance!");
+    }
+
+    // 1. User balance update
+    const { error: balanceError } = await _db
+        .from('profiles')
+        .update({ balance: nb })
+        .eq('mobile', u.mobile);
+
+    if (balanceError) {
+        return alert("Balance update failed: " + balanceError.message);
+    }
+
+    // 2. Admin System Logs save
+    const { error: logError } = await _db
+        .from('system_logs')
+        .insert([{
+            invite_code: u.invite_code,
+            user_mobile: u.mobile,
+            type: type,
+            amount: Number(a),
+            reason: type === 'gift' ? 'System Gift' : 'Deduction',
+            post_balance: nb
+        }]);
+
+    if (logError) {
+        return alert("System Log save failed: " + logError.message);
+    }
+
+    // 3. User Points History save
+    const { error: pointsError } = await _db
+        .from('points_details')
+        .insert([{
+            mobile_no: u.mobile,
+            invite_code: u.invite_code,
+            amount: type === 'gift' ? Number(a) : -Number(a),
+           reason: type === 'gift' ? 'System Gift' : 'Deduction',
+            post_balance: nb
+        }]);
+
+    if (pointsError) {
+        return alert("Points History save failed: " + pointsError.message);
+    }
+
+    alert(
+        type === 'gift'
+            ? "Gift added successfully!"
+            : "Deduct completed successfully!"
+    );
+
+    document.getElementById('wq').value = '';
+    document.getElementById('wa').value = '';
+
+    tab('wallet');
+}
+let walletHistoryData = [];
+async function loadWalletHistory(){
+
+alert("Function Running");
+
+    const {data,error}=await _db
+.from("system_logs")
+.select(`
+    id,
+    invite_code,
+    user_mobile,
+    type,
+    amount,
+    reason,
+    post_balance,
+    created_at
+`)
+.order("created_at",{ascending:false});
+
+console.log("Wallet Data:", data);
+console.log("Wallet Error:", error);
+
+
+    if(error){
+        alert(error.message);
+        return;
+    }
+
+
+    const tb=document.getElementById("walletHistory");
+
+
+    if(!tb){
+        console.log("Table not found");
+        return;
+    }
+
+
+    tb.innerHTML="";
+
+
+    if(!data || data.length===0){
+
+        tb.innerHTML=`
+        <tr>
+        <td colspan="7" class="p-4 text-center text-red-500">
+        No History Found
+        </td>
+        </tr>`;
+
+        return;
+    }
+
+
+    walletHistoryData = data;
+data.forEach(r=>{
+
+        tb.innerHTML += `
+
+        <tr>
+
+        <td class="p-4">${r.id}</td>
+
+        <td class="p-4">${r.user_mobile || "--"}</td>
+
+        <td class="p-4">${r.invite_code || "--"}</td>
+
+        <td class="p-4">${r.type || "--"}</td>
+
+        <td class="p-4">₹${r.amount || 0}</td>
+
+        <td class="p-4">${r.reason || "--"}</td>
+
+        <td class="p-4">₹${r.post_balance || 0}</td>
+
+        <td class="p-4">${r.created_at || "--"}</td>
+
+        </tr>
+
+        `;
+
+    });
+
+}
+        async function ban(m, s) {
+    const newStatus = s === 'active' ? 'banned' : 'active';
+
+    const { error } = await _db
+        .from('profiles')
+        .update({
+            status: newStatus
+        })
+        .eq('mobile', m);
+
+    if (error) {
+        console.error("Ban Error:", error);
+        return alert("Failed to update user status: " + error.message);
+    }
+
+    alert(
+        newStatus === 'banned'
+            ? "User banned successfully!"
+            : "User unbanned successfully!"
+    );
+
+    tab('users');
+}
+window.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('adminLoggedIn') === 'true') {
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('app-ui').classList.remove('hidden');
+
+        tab(localStorage.getItem('adminLastPage') || 'dash');
+    }
+});
+   function logoutAdmin() {
+    localStorage.removeItem('adminLoggedIn');
+    localStorage.removeItem('adminLastPage');
+
+    document.getElementById('app-ui').classList.add('hidden');
+    document.getElementById('login-screen').classList.remove('hidden');
+
+    document.getElementById('admin-mobile').value = '';
+}
+ </script>
+</body>
+</html>

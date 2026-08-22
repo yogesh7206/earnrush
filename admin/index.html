@@ -40,7 +40,7 @@
     class="mb-5 mx-auto block h-28 w-28 rounded-3xl object-cover shadow-lg"
 >
             <h2 class="text-2xl font-black mb-2 text-slate-800 uppercase italic">EarnRush</h2>
-            <input type="text" id="admin-mobile" placeholder="7206343481" class="w-full bg-white border border-slate-200 p-4 rounded-2xl mb-4 text-center font-bold outline-none">
+            <input type="text" id="admin-mobile" placeholder="Mobile No." class="w-full bg-white border border-slate-200 p-4 rounded-2xl mb-4 text-center font-bold outline-none">
             <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-bold shadow-lg">SYSTEM ACCESS</button>
         </div>
     </div>
@@ -263,22 +263,104 @@ class="w-full mt-4 bg-slate-50 border border-slate-200 p-4 rounded-2xl outline-n
 loadWalletHistory();
 
 }
-else if(name === 'points') {
-
+else if (name === 'points') {
     title.innerText = "POINT DETAILS";
 
     view.innerHTML = `
+        <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-slate-100">
+                <h2 class="font-black text-lg">All Transaction History</h2>
+<input
+    type="text"
+    id="pointsSearch"
+    oninput="filterPointsHistory()"
+    placeholder="Search Mobile No. / Invite Code"
+    class="w-full mt-4 bg-slate-50 border border-slate-200 p-4 rounded-2xl outline-none"
+> 
+            </div>
 
-    <div class="bg-white p-6 rounded-3xl border">
-        <h2 class="font-black text-lg">
-            All Transaction History
-        </h2>
-    </div>
+            <div class="overflow-x-auto table-scroll">
+                <table class="w-full text-left">
+                    <thead class="text-[9px] text-slate-400 bg-slate-50 uppercase">
+                        <tr>
+                            <th class="p-4">ID</th>
+                            <th class="p-4">Mobile</th>
+                            <th class="p-4">Invite Code</th>
+                            <th class="p-4">Transaction</th>
+                            <th class="p-4">Amount</th>
+                            <th class="p-4">Balance</th>
+                            <th class="p-4">Date / Time</th>
+                        </tr>
+                    </thead>
 
+                    <tbody id="pointsHistoryTable" class="divide-y divide-slate-100">
+                        <tr>
+                            <td colspan="7" class="p-8 text-center text-slate-400">
+                                Loading transactions...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     `;
 
+    const { data, error } = await _db
+        .from('points_details')
+        .select('id, mobile_no, invite_code, amount, reason, post_balance, created_at')
+        .order('created_at', { ascending: false });
+
+    const table = document.getElementById('pointsHistoryTable');
+
+    if (error) {
+        console.error('Points History Error:', error);
+
+        table.innerHTML = `
+            <tr>
+                <td colspan="7" class="p-8 text-center text-red-500">
+                    Failed to load transaction history.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    if (!data || data.length === 0) {
+        table.innerHTML = `
+            <tr>
+                <td colspan="7" class="p-8 text-center text-slate-400">
+                    No transaction history found.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    table.innerHTML = data.map(item => {
+        const amount = Number(item.amount || 0);
+        const isCredit = amount >= 0;
+        const amountColor = isCredit ? 'text-green-600' : 'text-slate-900';
+        const amountText = `${isCredit ? '+' : ''}${amount.toFixed(2)}`;
+
+        return `
+            <tr
+    data-mobile="${item.mobile_no || ''}"
+    data-invite="${item.invite_code || ''}"
+>
+                <td class="p-4 text-xs text-slate-400">#${item.id || '--'}</td>
+                <td class="p-4 font-bold text-blue-600">${item.mobile_no || '--'}</td>
+                <td class="p-4 text-slate-500">${item.invite_code || '--'}</td>
+                <td class="p-4 font-bold">${item.reason || 'Transaction'}</td>
+                <td class="p-4 font-black ${amountColor}">₹${amountText}</td>
+                <td class="p-4 font-bold">₹${Number(item.post_balance || 0).toFixed(2)}</td>
+                <td class="p-4 text-xs text-slate-400">
+                    ${item.created_at ? new Date(item.created_at).toLocaleString() : '--'}
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
-      }
+     }
 
         // Functions
        async function updateBonusSettings() {
@@ -598,6 +680,25 @@ window.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('admin-mobile').value = '';
 }
+function filterPointsHistory() {
+    const search = document
+        .getElementById('pointsSearch')
+        .value
+        .trim()
+        .toLowerCase();
+
+    document
+        .querySelectorAll('#pointsHistoryTable tr[data-mobile]')
+        .forEach(row => {
+            const mobile = row.dataset.mobile.toLowerCase();
+            const invite = row.dataset.invite.toLowerCase();
+
+            row.style.display =
+                mobile.includes(search) || invite.includes(search)
+                    ? ''
+                    : 'none';
+        });
+}o
  </script>
 </body>
 </html>

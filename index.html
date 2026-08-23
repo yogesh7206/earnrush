@@ -287,7 +287,7 @@ if ("serviceWorker" in navigator) {
     <div class="list-group">
 
         <!-- Daily Check-in Task -->
-        <div class="list-item" style="cursor:default;">
+    <div id="task-daily-checkin" class="list-item" style="cursor:default;">
     <span>
         <i data-lucide="check-circle"></i>
         Daily Check-in
@@ -317,7 +317,7 @@ if ("serviceWorker" in navigator) {
     </span>
 </div>
 <!-- Watch Ads Task -->
-<div class="list-item" style="cursor:default;">
+<div id="task-watch-ads" class="list-item" style="cursor:default;">
     <span>
         <i data-lucide="play-circle"></i>
         Watch Ads
@@ -339,7 +339,7 @@ if ("serviceWorker" in navigator) {
         GET
     </button>
 </div>
-<div class="list-item" onclick="openPage('demo-task-page')">
+<div id="task-demo" class="list-item" onclick="openPage('demo-task-page')">
     <span>
         <i data-lucide="clipboard-check"></i>
         Demo Task
@@ -350,7 +350,7 @@ if ("serviceWorker" in navigator) {
     </span>
 </div>
 <!-- Banner Ad -->
-<div style="
+<div id="task-banner-ads" style="
     width:100%;
     overflow:hidden;
     display:flex;
@@ -761,6 +761,7 @@ startApp();
         document.getElementById('app-dashboard').style.display = 'block';
         document.getElementById('bottom-tabs').style.display = 'flex';
         updateUI();
+        applyTaskVisibility();
     }
 async function checkBanStatus() {
     if (!curUser || !curUser.mobile) {
@@ -1013,11 +1014,21 @@ async function loadTeamDetails() {
     // Show theme button again
     document.getElementById('themeToggle').style.display = 'flex';
 }    
-    function tab(id, el) {
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.getElementById(id + '-sec').classList.add('active');
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+   function tab(id, el) {
+    document.querySelectorAll('.section')
+        .forEach(s => s.classList.remove('active'));
+
+    document.getElementById(id + '-sec')
+        .classList.add('active');
+
+    document.querySelectorAll('.tab')
+        .forEach(t => t.classList.remove('active'));
+
     el.classList.add('active');
+
+    if (id === 'task') {
+        applyTaskVisibility();
+    }
 }
   function copyInv() { 
     navigator.clipboard.writeText(curUser.invite_code); 
@@ -1504,6 +1515,37 @@ const displayReason = isWithdrawal
         `;
 
     }).join('');
+}
+async function applyTaskVisibility() {
+    const { data, error } = await db
+        .from('config')
+        .select('key, is_active')
+        .in('key', [
+            'task_daily_checkin',
+            'task_watch_ads',
+            'task_demo',
+            'task_banner_ads'
+        ]);
+
+    if (error) {
+        console.error('Task visibility error:', error);
+        return;
+    }
+
+    const taskIds = {
+        task_daily_checkin: 'task-daily-checkin',
+        task_watch_ads: 'task-watch-ads',
+        task_demo: 'task-demo',
+        task_banner_ads: 'task-banner-ads'
+    };
+
+    (data || []).forEach(setting => {
+        const task = document.getElementById(taskIds[setting.key]);
+
+        if (task) {
+            task.style.display = setting.is_active ? '' : 'none';
+        }
+    });
 }
 </script>
 <div id="reward-page" class="page-overlay">

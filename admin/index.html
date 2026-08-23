@@ -114,35 +114,117 @@
                 document.getElementById('dc').innerText = count || 0;
             }
 
-            else if(name === 'config') {
-                title.innerText = "SYSTEM SETTINGS";
-                view.innerHTML = `
-                    <div class="max-w-md bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-8">
-                        <div>
-                            <h3 class="font-black text-slate-800 italic uppercase mb-4">Registration Bonus</h3>
-                            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                <span class="font-bold text-slate-600 uppercase text-[11px]">Bonus Status</span>
-                                <label class="switch">
-                                    <input type="checkbox" id="bonus-toggle" onchange="updateBonusSettings()">
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                            <div class="mt-4">
-                                <label class="text-[10px] font-black text-slate-400 uppercase ml-2">Bonus Amount (₹)</label>
-                                <input type="number" id="bonus-amt" class="w-full mt-1 bg-slate-50 border border-slate-200 p-4 rounded-2xl outline-none font-bold text-blue-600" placeholder="e.g. 20">
-                            </div>
-                            <button onclick="updateBonusSettings()" class="w-full mt-6 bg-blue-600 text-white p-4 rounded-2xl font-black uppercase shadow-lg hover:bg-blue-700 transition">Save Settings</button>
-                        </div>
-                    </div>`;
-                
-                // Fetch settings from Supabase (assuming table name 'config')
-                const { data } = await _db.from('config').select('*').eq('key', 'registration_bonus').single();
-                if(data) {
-                    document.getElementById('bonus-toggle').checked = data.is_active;
-                    document.getElementById('bonus-amt').value = data.value;
-                }
-            }
+            else if (name === 'config') {
+    title.innerText = "SYSTEM SETTINGS";
 
+    view.innerHTML = `
+        <div class="max-w-md bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-8">
+
+            <div>
+                <h3 class="font-black text-slate-800 italic uppercase mb-4">
+                    Registration Bonus
+                </h3>
+
+                <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span class="font-bold text-slate-600 uppercase text-[11px]">Bonus Status</span>
+
+                    <label class="switch">
+                        <input type="checkbox" id="bonus-toggle" onchange="updateBonusSettings()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="mt-4">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-2">
+                        Bonus Amount (₹)
+                    </label>
+
+                    <input type="number" id="bonus-amt"
+                        class="w-full mt-1 bg-slate-50 border border-slate-200 p-4 rounded-2xl outline-none font-bold text-blue-600"
+                        placeholder="e.g. 20">
+                </div>
+
+                <button onclick="updateBonusSettings()"
+                    class="w-full mt-6 bg-blue-600 text-white p-4 rounded-2xl font-black uppercase shadow-lg">
+                    Save Bonus Settings
+                </button>
+            </div>
+
+            <div class="border-t pt-6">
+                <h3 class="font-black text-slate-800 italic uppercase mb-4">
+                    Task Visibility
+                </h3>
+
+                <div class="space-y-3">
+
+                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <span class="font-bold text-slate-600">Daily Check-in</span>
+                        <label class="switch">
+                            <input type="checkbox" id="task_daily_checkin"
+                                onchange="updateTaskVisibility('task_daily_checkin')">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <span class="font-bold text-slate-600">Watch Ads</span>
+                        <label class="switch">
+                            <input type="checkbox" id="task_watch_ads"
+                                onchange="updateTaskVisibility('task_watch_ads')">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <span class="font-bold text-slate-600">Demo Task</span>
+                        <label class="switch">
+                            <input type="checkbox" id="task_demo"
+                                onchange="updateTaskVisibility('task_demo')">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <span class="font-bold text-slate-600">Banner Ads</span>
+                        <label class="switch">
+                            <input type="checkbox" id="task_banner_ads"
+                                onchange="updateTaskVisibility('task_banner_ads')">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    `;
+
+    const { data: bonus } = await _db
+        .from('config')
+        .select('*')
+        .eq('key', 'registration_bonus')
+        .single();
+
+    if (bonus) {
+        document.getElementById('bonus-toggle').checked = bonus.is_active;
+        document.getElementById('bonus-amt').value = bonus.value;
+    }
+
+    const { data: tasks } = await _db
+        .from('config')
+        .select('key, is_active')
+        .in('key', [
+    'task_daily_checkin',
+    'task_watch_ads',
+    'task_demo',
+    'task_banner_ads'
+]);
+    (tasks || []).forEach(task => {
+        const toggle = document.getElementById(task.key);
+
+        if (toggle) {
+            toggle.checked = task.is_active;
+        }
+    });
+}
             else if(name === 'users') {
                 title.innerText = "USER LIST";
                 view.innerHTML = `<div class="mb-6"><input type="text" id="us" oninput="filterUsers()" placeholder="Search Mobile/Code" class="w-full md:w-96 bg-white border border-slate-200 p-4 rounded-2xl outline-none shadow-sm"></div>
@@ -698,7 +780,22 @@ function filterPointsHistory() {
                     ? ''
                     : 'none';
         });
-}o
+}
+async function updateTaskVisibility(taskKey) {
+    const isActive = document.getElementById(taskKey).checked;
+
+    const { error } = await _db
+        .from('config')
+        .update({ is_active: isActive })
+        .eq('key', taskKey);
+
+    if (error) {
+        alert("Task setting update failed: " + error.message);
+        return;
+    }
+
+    alert(isActive ? "Task is now visible." : "Task is now hidden.");
+}
  </script>
 </body>
 </html>

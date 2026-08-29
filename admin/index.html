@@ -183,14 +183,14 @@
                             <span class="slider"></span>
                         </label>
                     </div>
-                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                        <span class="font-bold text-slate-600">Banner Ads</span>
-                        <label class="switch">
-                            <input type="checkbox" id="task_banner_ads"
-                                onchange="updateTaskVisibility('task_banner_ads')">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
+<div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+    <span class="font-bold text-slate-600">Supervisor Section</span>
+    <label class="switch">
+        <input type="checkbox" id="section_supervisor"
+            onchange="updateTaskVisibility('section_supervisor')">
+        <span class="slider"></span>
+    </label>
+</div>
 
                 </div>
             </div>
@@ -215,7 +215,7 @@
     'task_daily_checkin',
     'task_watch_ads',
     'task_demo',
-    'task_banner_ads'
+    'section_supervisor'
 ]);
     (tasks || []).forEach(task => {
         const toggle = document.getElementById(task.key);

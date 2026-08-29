@@ -228,6 +228,59 @@ if ("serviceWorker" in navigator) {
             .catch(error => console.error("Service Worker error:", error));
     });
 }
+async function applySupervisorVisibility() {
+    const supervisorItem = document.getElementById('section-supervisor');
+
+    if (!supervisorItem) return;
+
+    const { data, error } = await db
+        .from('config')
+        .select('is_active')
+        .eq('key', 'section_supervisor')
+        .limit(1);
+
+    if (error || !data || data.length === 0) {
+        console.error('Supervisor visibility error:', error);
+        return;
+    }
+
+    const isVisible = data[0].is_active === true;
+
+    supervisorItem.style.setProperty(
+        'display',
+        isVisible ? 'flex' : 'none',
+        'important'
+    );
+}
+function restoreLastUserPage() {
+    const lastTab = localStorage.getItem('userLastTab') || 'mine';
+    const lastPage = localStorage.getItem('userLastPage');
+
+    document.querySelectorAll('.section')
+        .forEach(section => section.classList.remove('active'));
+
+    const section = document.getElementById(lastTab + '-sec');
+
+    if (section) {
+        section.classList.add('active');
+    }
+
+    document.querySelectorAll('.tab')
+        .forEach(tab => tab.classList.remove('active'));
+
+    const activeTab = document.querySelector(
+        `.tab[onclick*="'${lastTab}'"]`
+    );
+
+    if (activeTab) {
+        activeTab.classList.add('active');
+    }
+
+    if (lastPage && document.getElementById(lastPage)) {
+        openPage(lastPage);
+    }
+}
+
 </script>
 </head>
 <body>
@@ -349,35 +402,8 @@ if ("serviceWorker" in navigator) {
         Open
     </span>
 </div>
-<!-- Banner Ad -->
-<div id="task-banner-ads" style="
-    width:100%;
-    overflow:hidden;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    margin:15px 0;
-">
-    <script>
-        atOptions = {
-            'key' : 'f2251dde2d5731325debb34b7a74a9b0',
-            'format' : 'iframe',
-            'height' : 60,
-            'width' : 468,
-            'params' : {}
-        };
-function showLoader() {
-    document.getElementById('loading-screen').style.display = 'flex';
-}
 
-function hideLoader() {
-    document.getElementById('loading-screen').style.display = 'none';
-}
-    </script>
-
-    <script src="https://recallscarce.com/f2251dde2d5731325debb34b7a74a9b0/invoke.js"></script>
-</div>
-    </div>
+        </div>
 </div>
     <div id="mine-sec" class="section active">
         <div class="profile-header">
@@ -425,7 +451,8 @@ function hideLoader() {
     <i data-lucide="chevron-right" class="right-arrow"></i>
 </div>
             <div class="list-item" onclick="openPage('notification-page')"><span><i data-lucide="bell"></i> Notification</span><i data-lucide="chevron-right" class="right-arrow"></i></div>
-            <div class="list-item" onclick="openPage('supervisor-page')"><span><i data-lucide="user-check"></i> Supervisor</span><i data-lucide="chevron-right" class="right-arrow"></i></div>
+<div id="section-supervisor" class="list-item" onclick="openPage('supervisor-page')">
+<span><i data-lucide="user-check"></i> Supervisor</span><i data-lucide="chevron-right" class="right-arrow"></i></div>
             <div class="list-item" onclick="openPage('service-page')"><span><i data-lucide="headphones"></i> Online Services</span><i data-lucide="chevron-right" class="right-arrow"></i></div>
             <div class="list-item" onclick="openPage('security-page')"><span><i data-lucide="shield-check"></i> Account Security</span><i data-lucide="chevron-right" class="right-arrow"></i></div>
             <div class="list-item" onclick="logoutUser()" style="color:#ef4444"><span><i data-lucide="log-out"></i> Logout Account</span><i data-lucide="chevron-right" class="right-arrow"></i></div>
@@ -490,17 +517,15 @@ function hideLoader() {
         <span class="back-btn" onclick="closePage()">&lt;</span>
         <h3>Supervisor</h3>
     </div>
-
-    <div class="list-group">
         <div class="list-item">
-            <span>Supervisor Name</span>
-            <span>Admin</span>
-        </div>
+    <span>Invite Code</span>
+    <span id="supervisor-invite">Loading...</span>
+</div>
 
-        <div class="list-item">
-            <span>Contact</span>
-            <span>9876543210</span>
-        </div>
+<div class="list-item">
+    <span>Contact No.</span>
+    <span id="supervisor-mobile">Loading...</span>
+</div>
     </div>
 </div>
 <div id="service-page" class="page-overlay">
@@ -587,7 +612,22 @@ function toggleAuth() {
     }
 }
 
-    async function handleAuth() {
+    function showLoader() {
+    const loader = document.getElementById('loading-screen');
+
+    if (loader) {
+        loader.style.display = 'flex';
+    }
+}
+
+function hideLoader() {
+    const loader = document.getElementById('loading-screen');
+
+    if (loader) {
+        loader.style.display = 'none';
+    }
+}
+async function handleAuth() {
     showLoader();
 
     try {
@@ -762,6 +802,8 @@ startApp();
         document.getElementById('bottom-tabs').style.display = 'flex';
         updateUI();
         applyTaskVisibility();
+        applySupervisorVisibility();
+restoreLastUserPage();
     }
 async function checkBanStatus() {
     if (!curUser || !curUser.mobile) {
@@ -786,6 +828,8 @@ async function checkBanStatus() {
 
         localStorage.removeItem('loggedUser');
         localStorage.removeItem('sessionToken');
+        localStorage.removeItem('userLastTab');
+        localStorage.removeItem('userLastPage');
 
         document.getElementById('app-dashboard').style.display = 'none';
         document.getElementById('bottom-tabs').style.display = 'none';
@@ -800,10 +844,12 @@ setInterval(checkBanStatus, 1000);
         document.getElementById('u-bal').innerText = "₹ " + curUser.balance.toFixed(2);
         document.getElementById('u-invite-display').innerText = curUser.invite_code;
         document.getElementById('u-avatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${curUser.mobile}`;
-        document.getElementById('u-mob-display').innerText = isHide ? curUser.mobile.replace(/.(?=.{4})/g, '*') : curUser.mobile;
-        lucide.createIcons();
-    }
+        document.getElementById('u-mob-display').innerText =
+    isHide ? curUser.mobile.replace(/.(?=.{4})/g, '*') : curUser.mobile;
 
+lucide.createIcons();
+applySupervisorVisibility();
+}
     async function saveBank() {
         if(curUser.acc_holder_name) return alert("Contact customer to change details");
         const h = document.getElementById('b-holder').value;
@@ -911,6 +957,9 @@ setInterval(checkBanStatus, 1000);
     function openPage(id) { 
 
     document.getElementById(id).style.display = 'block';
+    if (id === 'supervisor-page') {
+    loadSupervisorDetails();
+    }
 
     // Hide theme button on Withdrawal page
     if (id === 'withdraw-page') {
@@ -1025,10 +1074,14 @@ async function loadTeamDetails() {
         .forEach(t => t.classList.remove('active'));
 
     el.classList.add('active');
+localStorage.setItem('userLastTab', id);
 
     if (id === 'task') {
         applyTaskVisibility();
     }
+    if (id === 'mine') {
+        applySupervisorVisibility();
+}
 }
   function copyInv() { 
     navigator.clipboard.writeText(curUser.invite_code); 
@@ -1133,10 +1186,10 @@ function toggleTheme(){
     );
 
     document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('app-dashboard').style.display = 'block';
-    document.getElementById('bottom-tabs').style.display = 'flex';
+document.getElementById('app-dashboard').style.display = 'block';
+document.getElementById('bottom-tabs').style.display = 'flex';
 
-    updateUI();
+updateUI();
 }
     }
 });
@@ -1520,25 +1573,22 @@ async function applyTaskVisibility() {
     const { data, error } = await db
         .from('config')
         .select('key, is_active')
-        .in('key', [
-            'task_daily_checkin',
-            'task_watch_ads',
-            'task_demo',
-            'task_banner_ads'
-        ]);
-
+       .in('key', [
+    'task_daily_checkin',
+    'task_watch_ads',
+    'task_demo',
+]);
     if (error) {
         console.error('Task visibility error:', error);
         return;
     }
 
     const taskIds = {
-        task_daily_checkin: 'task-daily-checkin',
-        task_watch_ads: 'task-watch-ads',
-        task_demo: 'task-demo',
-        task_banner_ads: 'task-banner-ads'
-    };
-
+    task_daily_checkin: 'task-daily-checkin',
+    task_watch_ads: 'task-watch-ads',
+    task_demo: 'task-demo',
+    section_supervisor: 'section-supervisor'
+};
     (data || []).forEach(setting => {
         const task = document.getElementById(taskIds[setting.key]);
 
@@ -1547,6 +1597,7 @@ async function applyTaskVisibility() {
         }
     });
 }
+
 </script>
 <div id="reward-page" class="page-overlay">
     <div class="page-header">

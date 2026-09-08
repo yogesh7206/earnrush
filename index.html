@@ -791,7 +791,8 @@ updateAppTitleVisibility(lastTab);
     <span>Contact No.</span>
     <span id="supervisor-mobile">Loading...</span>
 </div>
-
+    </div>
+</div>
 <div id="service-page" class="page-overlay">
     <div class="page-header">
         <span class="back-btn" onclick="closePage()">&lt;</span>
@@ -843,222 +844,6 @@ updateAppTitleVisibility(lastTab);
     const db = supabase.createClient(_URL, _KEY);
 
     let isReg = false, isHide = true, curUser = null;
-function getWatchAdsStorageKey() {
-    return `${WATCH_ADS_PENDING_KEY}_${curUser?.mobile || 'guest'}`;
-}
-
-async function loadWatchAdsConfig() {
-    const { data, error } = await db
-        .from('config')
-        .select('key, value, is_active')
-        .in('key', [
-            'task_watch_ads_reward',
-            'task_watch_ads_daily_limit',
-            'task_watch_ads_min_seconds'
-        ]);
-
-    if (error) {
-        console.error('Watch Ads config load error:', error);
-        return;
-    }
-
-    (data || []).forEach(item => {
-        if (item.is_active === false) return;
-
-        if (item.key === 'task_watch_ads_reward') {
-            watchAdsRewardAmount = Number(item.value || 1);
-        }
-
-        if (item.key === 'task_watch_ads_daily_limit') {
-            watchAdsDailyLimit = Number(item.value || 20);
-        }
-
-        if (item.key === 'task_watch_ads_min_seconds') {
-            watchAdsMinSeconds = Number(item.value || 15);
-        }
-    });
-}
-
-async function getTodayWatchAdsCount() {
-    if (!curUser) return 0;
-
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-
-    const end = new Date(start);
-    end.setDate(end.getDate() + 1);
-
-    const { data, error } = await db
-        .from('points_details')
-        .select('id')
-        .eq('mobile_no', curUser.mobile)
-        .eq('reason', WATCH_ADS_REASON)
-        .gte('created_at', start.toISOString())
-        .lt('created_at', end.toISOString());
-
-    if (error) {
-        console.error('Watch Ads count error:', error);
-        return 0;
-    }
-
-    return (data || []).length;
-}
-
-function setWatchAdsButtonState(label, disabled = false) {
-    const btn = document.getElementById('watch-ads-btn');
-    if (!btn) return;
-
-    btn.innerText = label;
-    btn.disabled = disabled;
-    btn.style.opacity = disabled ? '0.7' : '1';
-    btn.style.cursor = disabled ? 'not-allowed' : 'pointer';
-}
-
-async function finalizeWatchAdsRewardIfEligible(showAlertOnEarly = false) {
-    if (!curUser || watchAdsRewarding) return;
-
-    const sessionKey = getWatchAdsStorageKey();
-    const raw = localStorage.getItem(sessionKey);
-    if (!raw) return;
-
-    let session;
-    try {
-        session = JSON.parse(raw);
-    } catch {
-        localStorage.removeItem(sessionKey);
-        return;
-    }
-
-    const elapsedSeconds = Math.floor(
-        (Date.now() - Number(session?.startedAt || 0)) / 1000
-    );
-
-    if (elapsedSeconds < watchAdsMinSeconds) {
-        setWatchAdsButtonState(
-            `WAIT ${Math.max(1, watchAdsMinSeconds - elapsedSeconds)}s`,
-            true
-        );
-
-        if (showAlertOnEarly) {
-            alert(`Please watch ad for at least ${watchAdsMinSeconds} seconds.`);
-        }
-        return;
-    }
-
-    watchAdsRewarding = true;
-    setWatchAdsButtonState('REWARDING...', true);
-
-    try {
-        const watchedToday = await getTodayWatchAdsCount();
-
-        if (watchedToday >= watchAdsDailyLimit) {
-            localStorage.removeItem(sessionKey);
-            setWatchAdsButtonState('DAILY LIMIT', true);
-            alert(`Daily watch ads limit reached (${watchAdsDailyLimit}).`);
-            return;
-        }
-
-        const { data: latestProfile, error: profileError } = await db
-            .from('profiles')
-            .select('balance, invite_code')
-            .eq('mobile', curUser.mobile)
-            .single();
-
-        if (profileError || !latestProfile) {
-            console.error('Profile refresh failed:', profileError);
-            alert('Unable to credit reward right now. Please try again.');
-            return;
-        }
-
-        const rewardAmount = Number(watchAdsRewardAmount || 1);
-        const newBalance = Number(latestProfile.balance || 0) + rewardAmount;
-
-        const { error: balErr } = await db
-            .from('profiles')
-            .update({ balance: newBalance })
-            .eq('mobile', curUser.mobile);
-
-        if (balErr) {
-            console.error('Watch Ads balance update error:', balErr);
-            alert('Reward balance update failed.');
-            return;
-        }
-
-        const { error: pointsErr } = await db
-            .from('points_details')
-            .insert({
-                mobile_no: curUser.mobile,
-                invite_code: latestProfile.invite_code || curUser.invite_code,
-                amount: rewardAmount,
-                reason: WATCH_ADS_REASON,
-                post_balance: newBalance
-            });
-
-        if (pointsErr) {
-            console.error('Watch Ads history save error:', pointsErr);
-            alert('Reward history save failed.');
-            return;
-        }
-
-        curUser.balance = newBalance;
-        localStorage.setItem('loggedUser', JSON.stringify(curUser));
-        localStorage.removeItem(sessionKey);
-
-        updateUI();
-        loadHomeSummary();
-        setWatchAdsButtonState('GET', false);
-
-        alert(`Ad reward credited +${rewardAmount.toFixed(2)}`);
-    } finally {
-        watchAdsRewarding = false;
-    }
-}
-
-async function refreshWatchAdsActionState() {
-    if (!curUser) {
-        setWatchAdsButtonState('GET', false);
-        return;
-    }
-
-    await loadWatchAdsConfig();
-
-    const watchedToday = await getTodayWatchAdsCount();
-
-    if (watchedToday >= watchAdsDailyLimit) {
-        setWatchAdsButtonState('DAILY LIMIT', true);
-        return;
-    }
-
-    const sessionKey = getWatchAdsStorageKey();
-    const raw = localStorage.getItem(sessionKey);
-
-    if (!raw) {
-        setWatchAdsButtonState('GET', false);
-        return;
-    }
-
-    let session;
-    try {
-        session = JSON.parse(raw);
-    } catch {
-        localStorage.removeItem(sessionKey);
-        setWatchAdsButtonState('GET', false);
-        return;
-    }
-
-    const elapsedSeconds = Math.floor(
-        (Date.now() - Number(session?.startedAt || 0)) / 1000
-    );
-
-    if (elapsedSeconds >= watchAdsMinSeconds) {
-        finalizeWatchAdsRewardIfEligible(false);
-    } else {
-        setWatchAdsButtonState(
-            `WAIT ${Math.max(1, watchAdsMinSeconds - elapsedSeconds)}s`,
-            true
-        );
-    }
-}
 function generateInvite() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let code = '';
@@ -1073,12 +858,6 @@ function generateInvite() {
 }
 let homeSliderIndex = 0;
 let homeSliderInterval;
-const WATCH_ADS_REASON = 'Watch Ads Reward';
-const WATCH_ADS_PENDING_KEY = 'watchAdsPendingSession';
-let watchAdsRewardAmount = 1;
-let watchAdsDailyLimit = 20;
-let watchAdsMinSeconds = 60;
-let watchAdsRewarding = false;
 
 /* Automatic home banner slider */
 function updateHomeSlider(index) {
@@ -1116,13 +895,9 @@ function startHomeSlider() {
 }
 
 /* Today's positive earning from points_details */
-/* Today's positive earning from points_details */
 async function loadHomeSummary() {
     const todayEarningElement =
         document.getElementById('home-today-earning');
-
-    const adsWatchElement =
-        document.getElementById('ads-watch-count');
 
     if (!todayEarningElement || !curUser) return;
 
@@ -1132,50 +907,34 @@ async function loadHomeSummary() {
     const tomorrowStart = new Date(todayStart);
     tomorrowStart.setDate(tomorrowStart.getDate() + 1);
 
-    const { data, error } = await db
-        .from('points_details')
-        .select('amount, reason')
-        .eq('mobile_no', curUser.mobile)
-        .gte('created_at', todayStart.toISOString())
-        .lt('created_at', tomorrowStart.toISOString());
+   const { data, error } = await db
+    .from('points_details')
+    .select('amount, reason')
+    .eq('mobile_no', curUser.mobile)
+    .gte('created_at', todayStart.toISOString())
+    .lt('created_at', tomorrowStart.toISOString());
 
     if (error) {
         console.error('Today earning load error:', error);
-
-        if (adsWatchElement) {
-            adsWatchElement.innerText = '0';
-        }
-
-        todayEarningElement.innerText = '0.00';
+todayEarningElement.innerText = '0.00';
         return;
     }
 
-    const todayEntries = data || [];
+   const todayEarning = (data || []).reduce(
+    (total, item) => {
+        const amount = Number(item.amount || 0);
 
-    const watchedAdsCount = todayEntries.filter(item => {
+        if (amount <= 0) return total;
+
         const reason = (item.reason || '').toLowerCase();
-        return reason === WATCH_ADS_REASON.toLowerCase();
-    }).length;
 
-    if (adsWatchElement) {
-        adsWatchElement.innerText = String(watchedAdsCount);
-    }
+        // Withdrawal refund count nahi hoga
+        if (reason.includes('withdrawal')) return total;
 
-    const todayEarning = todayEntries.reduce(
-        (total, item) => {
-            const amount = Number(item.amount || 0);
-
-            if (amount <= 0) return total;
-
-            const reason = (item.reason || '').toLowerCase();
-
-            // Withdrawal refund count nahi hoga
-            if (reason.includes('withdrawal')) return total;
-
-            return total + amount;
-        },
-        0
-    );
+        return total + amount;
+    },
+    0
+);
 
     todayEarningElement.innerText = todayEarning.toFixed(2);
 }
@@ -1451,9 +1210,9 @@ startApp();
     applySupervisorVisibility();
     restoreLastUserPage();
     updateDailyCheckInUI();
-loadHomeSummary();
-startHomeSlider();
-refreshWatchAdsActionState();
+
+    loadHomeSummary();
+    startHomeSlider();
 }
 async function checkBanStatus() {
     if (!curUser || !curUser.mobile) {
@@ -1734,8 +1493,7 @@ updateAppTitleVisibility(id);
     }
 
     if (id === 'task') {
-    applyTaskVisibility();
-    refreshWatchAdsActionState();
+        applyTaskVisibility();
     }
 
     if (id === 'mine') {
@@ -2105,36 +1863,18 @@ loadHomeSummary();
 
 alert("Daily Check-in claimed! ₹1 added to your balance.");
 }
-async function watchAds() {
-    if (!curUser) return alert('Please login first!');
-
-    await loadWatchAdsConfig();
-
-    const watchedToday = await getTodayWatchAdsCount();
-    if (watchedToday >= watchAdsDailyLimit) {
-        setWatchAdsButtonState('DAILY LIMIT', true);
-        return alert(`Daily watch ads limit reached (${watchAdsDailyLimit}).`);
+function watchAds() {
+    if (!curUser) {
+        alert("Please login first!");
+        return;
     }
 
-    const sessionKey = getWatchAdsStorageKey();
-    localStorage.setItem(sessionKey, JSON.stringify({ startedAt: Date.now() }));
-
-    setWatchAdsButtonState(`WAIT ${watchAdsMinSeconds}s`, true);
-
+    // Adsterra Smartlink
     const smartLink = "https://recallscarce.com/fwws1penv?key=103b83ca582a89acbc6d4af5b39f4827";
+
+    // Open Smartlink in a new tab
     window.open(smartLink, "_blank");
-
-    setTimeout(() => finalizeWatchAdsRewardIfEligible(false), (watchAdsMinSeconds + 1) * 1000);
 }
-window.addEventListener('focus', () => {
-    refreshWatchAdsActionState();
-});
-
-document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
-        refreshWatchAdsActionState();
-    }
-});
 async function loadPointsHistory() {
 
     if (!curUser) return;
@@ -2318,80 +2058,7 @@ async function applyTaskVisibility() {
         }
     });
 }
-async function finalizeWatchAdsRewardIfEligible(showAlertOnEarly = false) {
-    if (!curUser || watchAdsRewarding) return;
 
-    const sessionKey = getWatchAdsStorageKey();
-    const raw = localStorage.getItem(sessionKey);
-    if (!raw) return;
-
-    let session;
-    try { session = JSON.parse(raw); } catch { localStorage.removeItem(sessionKey); return; }
-
-    const elapsedSeconds = Math.floor((Date.now() - Number(session.startedAt || 0)) / 1000);
-    if (elapsedSeconds < watchAdsMinSeconds) {
-        setWatchAdsButtonState(`WAIT ${Math.max(1, watchAdsMinSeconds - elapsedSeconds)}s`, true);
-        if (showAlertOnEarly) alert(`Please watch ad for at least ${watchAdsMinSeconds} seconds.`);
-        return;
-    }
-
-    watchAdsRewarding = true;
-    setWatchAdsButtonState('REWARDING...', true);
-
-    try {
-        const watchedToday = await getTodayWatchAdsCount();
-        if (watchedToday >= watchAdsDailyLimit) {
-            localStorage.removeItem(sessionKey);
-            setWatchAdsButtonState('DAILY LIMIT', true);
-            return;
-        }
-
-        const { data: latestProfile } = await db
-            .from('profiles')
-            .select('balance, invite_code')
-            .eq('mobile', curUser.mobile)
-            .single();
-
-        const rewardAmount = Number(watchAdsRewardAmount || 1);
-        const newBalance = Number(latestProfile?.balance || 0) + rewardAmount;
-
-        const { error: balErr } = await db
-            .from('profiles')
-            .update({ balance: newBalance })
-            .eq('mobile', curUser.mobile);
-        if (balErr) return;
-
-        const { error: pointsErr } = await db
-            .from('points_details')
-            .insert({
-                mobile_no: curUser.mobile,
-                invite_code: latestProfile?.invite_code || curUser.invite_code,
-                amount: rewardAmount,
-                reason: WATCH_ADS_REASON,
-                post_balance: newBalance
-            });
-        if (pointsErr) return;
-
-        curUser.balance = newBalance;
-        localStorage.setItem('loggedUser', JSON.stringify(curUser));
-        localStorage.removeItem(sessionKey);
-
-        updateUI();
-        loadHomeSummary();
-        setWatchAdsButtonState('GET', false);
-    } finally {
-        watchAdsRewarding = false;
-    }
-}
-window.addEventListener('focus', () => {
-    refreshWatchAdsActionState();
-});
-
-document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
-        refreshWatchAdsActionState();
-    }
-});
 </script>
 <div id="reward-page" class="page-overlay">
     <div class="page-header">

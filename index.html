@@ -219,6 +219,202 @@ body.dark .wd-chip{
         transform: rotate(360deg);
     }
 }
+/* Home automatic slider */
+.home-slider {
+    position: relative;
+    width: 100%;
+    height: 205px;
+    overflow: hidden;
+    border-radius: 24px;
+    margin-top: 12px;
+    background: #10b981;
+}
+.home-slides {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.55s ease;
+}
+
+.home-slide {
+    position: relative;
+    flex: 0 0 100%;
+    min-width: 100%;
+    height: 100%;
+    overflow: hidden;
+    color: #ffffff;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+}
+.home-slide-one {
+    background: linear-gradient(135deg, #079669, #20c997);
+}
+
+.home-slide-two {
+    background: linear-gradient(135deg, #2563eb, #38bdf8);
+}
+
+.home-slide-three {
+    background: linear-gradient(135deg, #7c3aed, #c084fc);
+}
+
+.home-slide-content {
+    position: relative;
+    z-index: 2;
+    max-width: 315px;
+}
+
+.home-slide-content small {
+    display: block;
+    margin-bottom: 12px;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+}
+
+.home-slide-content h2 {
+    margin: 0 0 8px;
+    color: #ffffff;
+    font-size: 24px;
+    line-height: 1.2;
+    font-weight: 800;
+}
+
+.home-slide-content p {
+    margin: 0;
+    max-width: 245px;
+    color: #ffffff;
+    font-size: 14px;
+    line-height: 1.45;
+    font-weight: 500;
+}
+.home-slide-circle {
+    position: absolute;
+    width: 145px;
+    height: 145px;
+    right: -24px;
+    top: -48px;
+    border-radius: 50%;
+    border: 20px solid rgba(255, 255, 255, 0.14);
+}
+.home-slider-dots {
+    position: absolute;
+    z-index: 5;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.home-dot {
+    width: 10px;
+    height: 10px;
+    display: block;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.55);
+    transition: width 0.25s ease, background 0.25s ease;
+}
+
+.home-dot.active {
+    width: 29px;
+    background: #ffffff;
+}
+
+/* Ads Watch + Today's Earnings box */
+.home-summary-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 118px;
+    margin-top: 16px;
+    padding-bottom: 40px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    background: var(--card);
+}
+.home-summary-metric {
+    display: flex;
+    min-width: 0;
+    padding: 26px 14px 22px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.home-summary-metric:first-child {
+    border-right: 1px solid var(--border);
+}
+
+.home-summary-metric span {
+    color: var(--sub);
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.home-summary-metric small {
+    margin-top: 4px;
+    color: var(--sub);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.home-summary-metric strong {
+    margin-top: 8px;
+    color: var(--text);
+    font-size: 31px;
+    line-height: 1;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.home-summary-more {
+    position: absolute;
+    z-index: 4;
+    left: 50%;
+    bottom: 10px;
+    transform: translateX(-50%);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 7px 14px;
+    background: var(--card);
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    white-space: nowrap;
+}
+body.dark .home-summary-card,
+body.dark .home-summary-more {
+    background: var(--card);
+}
+
+@media (max-width: 380px) {
+    .home-slider {
+        height: 180px;
+    }
+
+    .home-slide {
+        padding: 16px;
+    }
+
+    .home-slide-content h2 {
+        font-size: 20px;
+    }
+
+    .home-slide-content p {
+        font-size: 12px;
+        max-width: 210px;
+    }
+
+    .home-summary-metric strong {
+        font-size: 25px;
+    }
+}
 </style>
 <script>
 if ("serviceWorker" in navigator) {
@@ -252,6 +448,12 @@ async function applySupervisorVisibility() {
         'important'
     );
 }
+function updateAppTitleVisibility(activeTab) {
+    const title = document.querySelector('.app-title');
+    if (!title) return;
+
+    title.style.display = activeTab === 'home' ? 'none' : 'block';
+}
 function restoreLastUserPage() {
     const lastTab = localStorage.getItem('userLastTab') || 'mine';
     const lastPage = localStorage.getItem('userLastPage');
@@ -269,18 +471,19 @@ function restoreLastUserPage() {
         .forEach(tab => tab.classList.remove('active'));
 
     const activeTab = document.querySelector(
-        `.tab[onclick*="'${lastTab}'"]`
-    );
+    `.tab[onclick*="'${lastTab}'"]`
+);
 
-    if (activeTab) {
-        activeTab.classList.add('active');
-    }
+if (activeTab) {
+    activeTab.classList.add('active');
+}
+
+updateAppTitleVisibility(lastTab);
 
     if (lastPage && document.getElementById(lastPage)) {
         openPage(lastPage);
     }
 }
-
 </script>
 </head>
 <body>
@@ -324,16 +527,78 @@ function restoreLastUserPage() {
 <div id="app-dashboard">
 <div class="app-title">EarnRush</div>
     <div id="home-sec" class="section">
-        <h2 style="padding:10px 0">Home</h2>
-        <div class="large-card bal-card">
-            <div class="card-icon"><i data-lucide="megaphone"></i></div>
-            <div><b>Announcement</b><br><small>Welcome to NexGen Premium!</small></div>
+
+    <div class="home-slider" id="home-slider">
+        <div class="home-slides" id="home-slides">
+
+            <div class="home-slide home-slide-one">
+                <div class="home-slide-content">
+                    <small>EARNRUSH REWARDS</small>
+                    <h2>Watch, earn and<br>grow every day.</h2>
+                    <p>
+                        Complete available tasks and keep track
+                        of your rewards in one place.
+                    </p>
+                </div>
+                <div class="home-slide-circle"></div>
+            </div>
+
+            <div class="home-slide home-slide-two">
+                <div class="home-slide-content">
+                    <small>DAILY REWARDS</small>
+                    <h2>Claim rewards<br>every single day.</h2>
+                    <p>
+                        Visit the Task Center daily and collect
+                        your available rewards.
+                    </p>
+                </div>
+                <div class="home-slide-circle"></div>
+            </div>
+
+            <div class="home-slide home-slide-three">
+                <div class="home-slide-content">
+                    <small>INVITE & EARN</small>
+                    <h2>Build your team<br>and earn more.</h2>
+                    <p>
+                        Share your invite code and grow your
+                        EarnRush community.
+                    </p>
+                </div>
+                <div class="home-slide-circle"></div>
+            </div>
+
         </div>
-        <div class="list-group">
-            <div class="list-item"><span><i data-lucide="trending-up"></i> Invest & Earn</span><i data-lucide="chevron-right" class="right-arrow"></i></div>
+
+        <div class="home-slider-dots">
+            <span class="home-dot active"></span>
+            <span class="home-dot"></span>
+            <span class="home-dot"></span>
         </div>
     </div>
 
+    <div class="home-summary-card">
+
+        <div class="home-summary-metric">
+            <span>Ads Watch</span>
+            <strong id="ads-watch-count">0</strong>
+        </div>
+
+        <div class="home-summary-metric">
+    <span>Total Revenue</span>
+<strong id="home-today-earning">0.00</strong>
+</div>
+        <button
+            type="button"
+            class="home-summary-more"
+            onclick="openPage('balance-page')"
+        >
+            More &gt;
+        </button>
+
+    </div>
+
+</div>
+       
     <div id="task-sec" class="section">
     <h2 style="padding:10px 0">Task Center</h2>
 
@@ -526,8 +791,7 @@ function restoreLastUserPage() {
     <span>Contact No.</span>
     <span id="supervisor-mobile">Loading...</span>
 </div>
-    </div>
-</div>
+
 <div id="service-page" class="page-overlay">
     <div class="page-header">
         <span class="back-btn" onclick="closePage()">&lt;</span>
@@ -579,6 +843,222 @@ function restoreLastUserPage() {
     const db = supabase.createClient(_URL, _KEY);
 
     let isReg = false, isHide = true, curUser = null;
+function getWatchAdsStorageKey() {
+    return `${WATCH_ADS_PENDING_KEY}_${curUser?.mobile || 'guest'}`;
+}
+
+async function loadWatchAdsConfig() {
+    const { data, error } = await db
+        .from('config')
+        .select('key, value, is_active')
+        .in('key', [
+            'task_watch_ads_reward',
+            'task_watch_ads_daily_limit',
+            'task_watch_ads_min_seconds'
+        ]);
+
+    if (error) {
+        console.error('Watch Ads config load error:', error);
+        return;
+    }
+
+    (data || []).forEach(item => {
+        if (item.is_active === false) return;
+
+        if (item.key === 'task_watch_ads_reward') {
+            watchAdsRewardAmount = Number(item.value || 1);
+        }
+
+        if (item.key === 'task_watch_ads_daily_limit') {
+            watchAdsDailyLimit = Number(item.value || 20);
+        }
+
+        if (item.key === 'task_watch_ads_min_seconds') {
+            watchAdsMinSeconds = Number(item.value || 15);
+        }
+    });
+}
+
+async function getTodayWatchAdsCount() {
+    if (!curUser) return 0;
+
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+
+    const { data, error } = await db
+        .from('points_details')
+        .select('id')
+        .eq('mobile_no', curUser.mobile)
+        .eq('reason', WATCH_ADS_REASON)
+        .gte('created_at', start.toISOString())
+        .lt('created_at', end.toISOString());
+
+    if (error) {
+        console.error('Watch Ads count error:', error);
+        return 0;
+    }
+
+    return (data || []).length;
+}
+
+function setWatchAdsButtonState(label, disabled = false) {
+    const btn = document.getElementById('watch-ads-btn');
+    if (!btn) return;
+
+    btn.innerText = label;
+    btn.disabled = disabled;
+    btn.style.opacity = disabled ? '0.7' : '1';
+    btn.style.cursor = disabled ? 'not-allowed' : 'pointer';
+}
+
+async function finalizeWatchAdsRewardIfEligible(showAlertOnEarly = false) {
+    if (!curUser || watchAdsRewarding) return;
+
+    const sessionKey = getWatchAdsStorageKey();
+    const raw = localStorage.getItem(sessionKey);
+    if (!raw) return;
+
+    let session;
+    try {
+        session = JSON.parse(raw);
+    } catch {
+        localStorage.removeItem(sessionKey);
+        return;
+    }
+
+    const elapsedSeconds = Math.floor(
+        (Date.now() - Number(session?.startedAt || 0)) / 1000
+    );
+
+    if (elapsedSeconds < watchAdsMinSeconds) {
+        setWatchAdsButtonState(
+            `WAIT ${Math.max(1, watchAdsMinSeconds - elapsedSeconds)}s`,
+            true
+        );
+
+        if (showAlertOnEarly) {
+            alert(`Please watch ad for at least ${watchAdsMinSeconds} seconds.`);
+        }
+        return;
+    }
+
+    watchAdsRewarding = true;
+    setWatchAdsButtonState('REWARDING...', true);
+
+    try {
+        const watchedToday = await getTodayWatchAdsCount();
+
+        if (watchedToday >= watchAdsDailyLimit) {
+            localStorage.removeItem(sessionKey);
+            setWatchAdsButtonState('DAILY LIMIT', true);
+            alert(`Daily watch ads limit reached (${watchAdsDailyLimit}).`);
+            return;
+        }
+
+        const { data: latestProfile, error: profileError } = await db
+            .from('profiles')
+            .select('balance, invite_code')
+            .eq('mobile', curUser.mobile)
+            .single();
+
+        if (profileError || !latestProfile) {
+            console.error('Profile refresh failed:', profileError);
+            alert('Unable to credit reward right now. Please try again.');
+            return;
+        }
+
+        const rewardAmount = Number(watchAdsRewardAmount || 1);
+        const newBalance = Number(latestProfile.balance || 0) + rewardAmount;
+
+        const { error: balErr } = await db
+            .from('profiles')
+            .update({ balance: newBalance })
+            .eq('mobile', curUser.mobile);
+
+        if (balErr) {
+            console.error('Watch Ads balance update error:', balErr);
+            alert('Reward balance update failed.');
+            return;
+        }
+
+        const { error: pointsErr } = await db
+            .from('points_details')
+            .insert({
+                mobile_no: curUser.mobile,
+                invite_code: latestProfile.invite_code || curUser.invite_code,
+                amount: rewardAmount,
+                reason: WATCH_ADS_REASON,
+                post_balance: newBalance
+            });
+
+        if (pointsErr) {
+            console.error('Watch Ads history save error:', pointsErr);
+            alert('Reward history save failed.');
+            return;
+        }
+
+        curUser.balance = newBalance;
+        localStorage.setItem('loggedUser', JSON.stringify(curUser));
+        localStorage.removeItem(sessionKey);
+
+        updateUI();
+        loadHomeSummary();
+        setWatchAdsButtonState('GET', false);
+
+        alert(`Ad reward credited +${rewardAmount.toFixed(2)}`);
+    } finally {
+        watchAdsRewarding = false;
+    }
+}
+
+async function refreshWatchAdsActionState() {
+    if (!curUser) {
+        setWatchAdsButtonState('GET', false);
+        return;
+    }
+
+    await loadWatchAdsConfig();
+
+    const watchedToday = await getTodayWatchAdsCount();
+
+    if (watchedToday >= watchAdsDailyLimit) {
+        setWatchAdsButtonState('DAILY LIMIT', true);
+        return;
+    }
+
+    const sessionKey = getWatchAdsStorageKey();
+    const raw = localStorage.getItem(sessionKey);
+
+    if (!raw) {
+        setWatchAdsButtonState('GET', false);
+        return;
+    }
+
+    let session;
+    try {
+        session = JSON.parse(raw);
+    } catch {
+        localStorage.removeItem(sessionKey);
+        setWatchAdsButtonState('GET', false);
+        return;
+    }
+
+    const elapsedSeconds = Math.floor(
+        (Date.now() - Number(session?.startedAt || 0)) / 1000
+    );
+
+    if (elapsedSeconds >= watchAdsMinSeconds) {
+        finalizeWatchAdsRewardIfEligible(false);
+    } else {
+        setWatchAdsButtonState(
+            `WAIT ${Math.max(1, watchAdsMinSeconds - elapsedSeconds)}s`,
+            true
+        );
+    }
+}
 function generateInvite() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let code = '';
@@ -590,6 +1070,114 @@ function generateInvite() {
     }
 
     return code;
+}
+let homeSliderIndex = 0;
+let homeSliderInterval;
+const WATCH_ADS_REASON = 'Watch Ads Reward';
+const WATCH_ADS_PENDING_KEY = 'watchAdsPendingSession';
+let watchAdsRewardAmount = 1;
+let watchAdsDailyLimit = 20;
+let watchAdsMinSeconds = 60;
+let watchAdsRewarding = false;
+
+/* Automatic home banner slider */
+function updateHomeSlider(index) {
+    const slides = document.querySelectorAll('#home-sec .home-slide');
+    const dots = document.querySelectorAll('#home-sec .home-dot');
+    const slidesContainer = document.getElementById('home-slides');
+
+    if (!slides.length || !slidesContainer) return;
+
+    homeSliderIndex = (index + slides.length) % slides.length;
+
+    slidesContainer.style.transform =
+        `translateX(-${homeSliderIndex * 100}%)`;
+
+    dots.forEach((dot, dotIndex) => {
+        dot.classList.toggle(
+            'active',
+            dotIndex === homeSliderIndex
+        );
+    });
+}
+
+function startHomeSlider() {
+    const slides = document.querySelectorAll('#home-sec .home-slide');
+
+    if (!slides.length) return;
+
+    clearInterval(homeSliderInterval);
+
+    updateHomeSlider(homeSliderIndex);
+
+    homeSliderInterval = setInterval(() => {
+        updateHomeSlider(homeSliderIndex + 1);
+    }, 3500);
+}
+
+/* Today's positive earning from points_details */
+/* Today's positive earning from points_details */
+async function loadHomeSummary() {
+    const todayEarningElement =
+        document.getElementById('home-today-earning');
+
+    const adsWatchElement =
+        document.getElementById('ads-watch-count');
+
+    if (!todayEarningElement || !curUser) return;
+
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const tomorrowStart = new Date(todayStart);
+    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+
+    const { data, error } = await db
+        .from('points_details')
+        .select('amount, reason')
+        .eq('mobile_no', curUser.mobile)
+        .gte('created_at', todayStart.toISOString())
+        .lt('created_at', tomorrowStart.toISOString());
+
+    if (error) {
+        console.error('Today earning load error:', error);
+
+        if (adsWatchElement) {
+            adsWatchElement.innerText = '0';
+        }
+
+        todayEarningElement.innerText = '0.00';
+        return;
+    }
+
+    const todayEntries = data || [];
+
+    const watchedAdsCount = todayEntries.filter(item => {
+        const reason = (item.reason || '').toLowerCase();
+        return reason === WATCH_ADS_REASON.toLowerCase();
+    }).length;
+
+    if (adsWatchElement) {
+        adsWatchElement.innerText = String(watchedAdsCount);
+    }
+
+    const todayEarning = todayEntries.reduce(
+        (total, item) => {
+            const amount = Number(item.amount || 0);
+
+            if (amount <= 0) return total;
+
+            const reason = (item.reason || '').toLowerCase();
+
+            // Withdrawal refund count nahi hoga
+            if (reason.includes('withdrawal')) return total;
+
+            return total + amount;
+        },
+        0
+    );
+
+    todayEarningElement.innerText = todayEarning.toFixed(2);
 }
 function toggleAuth() {
     isReg = !isReg;
@@ -724,15 +1312,72 @@ if (!functionData) {
 }
 
 if (!functionData.success) {
-    alert(
-        "Registration Error: " +
-        (functionData.message || "Unknown error")
-    );
-    return;
+  alert('Registration Error: ' + (functionData.message || 'Unknown error'));
+  return;
 }
 
-alert("Registered!");
-toggleAuth();     
+if (regBonus > 0) {
+  let createdProfile = null;
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const { data: profileData } = await db
+      .from('profiles')
+      .select('mobile, invite_code, balance')
+      .eq('mobile', mob)
+      .single();
+
+    if (profileData) {
+      createdProfile = profileData;
+      break;
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 600));
+  }
+
+  const bonusMobile = createdProfile?.mobile || mob;
+  const bonusInviteCode = createdProfile?.invite_code || myNewInv;
+  const postBalance = Number(createdProfile?.balance ?? regBonus);
+
+  const { data: existingBonus } = await db
+    .from('points_details')
+    .select('id')
+    .eq('mobile_no', bonusMobile)
+    .in('reason', ['Registration Bonus', 'System Gift'])
+    .limit(1);
+
+  if (!existingBonus || existingBonus.length === 0) {
+    let { error: bonusHistoryError } = await db
+      .from('points_details')
+      .insert({
+        mobile_no: bonusMobile,
+        invite_code: bonusInviteCode,
+        amount: regBonus,
+        reason: 'Registration Bonus',
+        post_balance: postBalance
+      });
+
+    if (bonusHistoryError) {
+      const fallback = await db
+        .from('points_details')
+        .insert({
+          mobile_no: bonusMobile,
+          invite_code: bonusInviteCode,
+          amount: regBonus,
+          reason: 'System Gift',
+          post_balance: postBalance
+        });
+
+      bonusHistoryError = fallback.error;
+    }
+
+    if (bonusHistoryError) {
+      console.error('Registration bonus history save error:', bonusHistoryError);
+      alert('Bonus mila hai, lekin points history save nahi hui: ' + (bonusHistoryError.message || 'Unknown error'));
+    }
+  }
+}
+alert('Registered!');
+toggleAuth();
         } else {
 
             const { data, error } = await db
@@ -797,14 +1442,19 @@ startApp();
 }
 
     function startApp() {
-        document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('app-dashboard').style.display = 'block';
-        document.getElementById('bottom-tabs').style.display = 'flex';
-        updateUI();
-        applyTaskVisibility();
-        applySupervisorVisibility();
-restoreLastUserPage();
-    }
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app-dashboard').style.display = 'block';
+    document.getElementById('bottom-tabs').style.display = 'flex';
+
+    updateUI();
+    applyTaskVisibility();
+    applySupervisorVisibility();
+    restoreLastUserPage();
+    updateDailyCheckInUI();
+loadHomeSummary();
+startHomeSlider();
+refreshWatchAdsActionState();
+}
 async function checkBanStatus() {
     if (!curUser || !curUser.mobile) {
         return;
@@ -1063,7 +1713,7 @@ async function loadTeamDetails() {
     // Show theme button again
     document.getElementById('themeToggle').style.display = 'flex';
 }    
-   function tab(id, el) {
+  function tab(id, el) {
     document.querySelectorAll('.section')
         .forEach(s => s.classList.remove('active'));
 
@@ -1074,19 +1724,51 @@ async function loadTeamDetails() {
         .forEach(t => t.classList.remove('active'));
 
     el.classList.add('active');
-localStorage.setItem('userLastTab', id);
+
+    localStorage.setItem('userLastTab', id);
+updateAppTitleVisibility(id);
+
+    if (id === 'home') {
+        loadHomeSummary();
+        startHomeSlider();
+    }
 
     if (id === 'task') {
-        applyTaskVisibility();
+    applyTaskVisibility();
+    refreshWatchAdsActionState();
     }
+
     if (id === 'mine') {
         applySupervisorVisibility();
+    }
 }
+  async function copyInv() {
+    if (!curUser || !curUser.invite_code) return;
+
+    const inviteLink =
+        `${window.location.origin}${window.location.pathname}` +
+`?invite=${encodeURIComponent(curUser.invite_code)}`;
+    const shareText =
+        `Join EarnRush using my invite code: ${curUser.invite_code}`;
+
+    try {
+        if (navigator.share) {
+            await navigator.share({
+                title: 'Join EarnRush',
+                text: shareText,
+                url: inviteLink
+            });
+        } else if (navigator.clipboard) {
+            await navigator.clipboard.writeText(inviteLink);
+            alert('Invite link copied!');
+        } else {
+            prompt('Copy your invite link:', inviteLink);
+        }
+    } catch (error) {
+        console.log('Share cancelled or failed:', error);
+    }
 }
-  function copyInv() { 
-    navigator.clipboard.writeText(curUser.invite_code); 
-    alert("Copied!"); 
-}
+
 
 
 // ADD THIS HERE
@@ -1152,6 +1834,21 @@ function toggleTheme(){
 }window.addEventListener('load', async () => {
 
     const savedUser = localStorage.getItem('loggedUser');
+const inviteFromLink = new URLSearchParams(
+    window.location.search
+).get('invite');
+if (
+    inviteFromLink &&
+    !savedUser &&
+    /^[A-Za-z0-9]{6}$/.test(inviteFromLink)
+) {
+    if (!isReg) {
+        toggleAuth();
+    }
+
+    document.getElementById('auth-invite-req').value =
+        inviteFromLink;
+}
 
     if(savedUser){
 
@@ -1403,22 +2100,41 @@ async function completeDailyCheckIn() {
     );
 
     updateUI();
-    updateDailyCheckInUI();
+updateDailyCheckInUI();
+loadHomeSummary();
 
-    alert("Daily Check-in claimed! ₹1 added to your balance.");
+alert("Daily Check-in claimed! ₹1 added to your balance.");
 }
-function watchAds() {
-    if (!curUser) {
-        alert("Please login first!");
-        return;
+async function watchAds() {
+    if (!curUser) return alert('Please login first!');
+
+    await loadWatchAdsConfig();
+
+    const watchedToday = await getTodayWatchAdsCount();
+    if (watchedToday >= watchAdsDailyLimit) {
+        setWatchAdsButtonState('DAILY LIMIT', true);
+        return alert(`Daily watch ads limit reached (${watchAdsDailyLimit}).`);
     }
 
-    // Adsterra Smartlink
-    const smartLink = "https://recallscarce.com/fwws1penv?key=103b83ca582a89acbc6d4af5b39f4827";
+    const sessionKey = getWatchAdsStorageKey();
+    localStorage.setItem(sessionKey, JSON.stringify({ startedAt: Date.now() }));
 
-    // Open Smartlink in a new tab
+    setWatchAdsButtonState(`WAIT ${watchAdsMinSeconds}s`, true);
+
+    const smartLink = "https://recallscarce.com/fwws1penv?key=103b83ca582a89acbc6d4af5b39f4827";
     window.open(smartLink, "_blank");
+
+    setTimeout(() => finalizeWatchAdsRewardIfEligible(false), (watchAdsMinSeconds + 1) * 1000);
 }
+window.addEventListener('focus', () => {
+    refreshWatchAdsActionState();
+});
+
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+        refreshWatchAdsActionState();
+    }
+});
 async function loadPointsHistory() {
 
     if (!curUser) return;
@@ -1508,6 +2224,9 @@ const isDeduction =
 const isGift =
     rawReason.toLowerCase().includes('gift');
 
+const isWithdrawalFailed =
+    isWithdrawal && amount > 0;
+
 const amountColor =
     amount >= 0
         ? 'var(--primary)'
@@ -1515,13 +2234,15 @@ const amountColor =
             ? '#111827'
             : '#ef4444';
 
-const displayReason = isWithdrawal
-    ? 'Withdrawal'
-    : isDeduction
-        ? 'Deduction'
-        : isGift
-            ? 'System Gift'
-            : rawReason;
+const displayReason = isWithdrawalFailed
+    ? 'Withdrawal Failed'
+    : isWithdrawal
+        ? 'Withdrawal'
+        : isDeduction
+            ? 'Deduction'
+            : isGift
+                ? 'System Gift'
+                : rawReason;
 
         const dateTime =
             new Date(item.created_at).toLocaleString();
@@ -1597,7 +2318,80 @@ async function applyTaskVisibility() {
         }
     });
 }
+async function finalizeWatchAdsRewardIfEligible(showAlertOnEarly = false) {
+    if (!curUser || watchAdsRewarding) return;
 
+    const sessionKey = getWatchAdsStorageKey();
+    const raw = localStorage.getItem(sessionKey);
+    if (!raw) return;
+
+    let session;
+    try { session = JSON.parse(raw); } catch { localStorage.removeItem(sessionKey); return; }
+
+    const elapsedSeconds = Math.floor((Date.now() - Number(session.startedAt || 0)) / 1000);
+    if (elapsedSeconds < watchAdsMinSeconds) {
+        setWatchAdsButtonState(`WAIT ${Math.max(1, watchAdsMinSeconds - elapsedSeconds)}s`, true);
+        if (showAlertOnEarly) alert(`Please watch ad for at least ${watchAdsMinSeconds} seconds.`);
+        return;
+    }
+
+    watchAdsRewarding = true;
+    setWatchAdsButtonState('REWARDING...', true);
+
+    try {
+        const watchedToday = await getTodayWatchAdsCount();
+        if (watchedToday >= watchAdsDailyLimit) {
+            localStorage.removeItem(sessionKey);
+            setWatchAdsButtonState('DAILY LIMIT', true);
+            return;
+        }
+
+        const { data: latestProfile } = await db
+            .from('profiles')
+            .select('balance, invite_code')
+            .eq('mobile', curUser.mobile)
+            .single();
+
+        const rewardAmount = Number(watchAdsRewardAmount || 1);
+        const newBalance = Number(latestProfile?.balance || 0) + rewardAmount;
+
+        const { error: balErr } = await db
+            .from('profiles')
+            .update({ balance: newBalance })
+            .eq('mobile', curUser.mobile);
+        if (balErr) return;
+
+        const { error: pointsErr } = await db
+            .from('points_details')
+            .insert({
+                mobile_no: curUser.mobile,
+                invite_code: latestProfile?.invite_code || curUser.invite_code,
+                amount: rewardAmount,
+                reason: WATCH_ADS_REASON,
+                post_balance: newBalance
+            });
+        if (pointsErr) return;
+
+        curUser.balance = newBalance;
+        localStorage.setItem('loggedUser', JSON.stringify(curUser));
+        localStorage.removeItem(sessionKey);
+
+        updateUI();
+        loadHomeSummary();
+        setWatchAdsButtonState('GET', false);
+    } finally {
+        watchAdsRewarding = false;
+    }
+}
+window.addEventListener('focus', () => {
+    refreshWatchAdsActionState();
+});
+
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+        refreshWatchAdsActionState();
+    }
+});
 </script>
 <div id="reward-page" class="page-overlay">
     <div class="page-header">
@@ -1618,7 +2412,7 @@ async function applyTaskVisibility() {
                 <i data-lucide="users"></i>
                 Total Team Members
             </span>
-            <b id="team-total">0</b>https://yogesh7206.github.io/earnrush/
+<b id="team-total">0</b>
         </div>
 
         <div class="list-item">
